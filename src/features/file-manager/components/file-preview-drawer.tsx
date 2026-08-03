@@ -40,7 +40,21 @@ const typeIconMap: Record<string, React.ReactNode> = {
 };
 
 export function FilePreviewDrawer() {
-  const { selectedFile, isPreviewOpen, closePreviewDrawer, toggleFavoriteFile, deleteFile } = useFileStore();
+  const { selectedFile, isPreviewOpen, closePreviewDrawer, toggleFavoriteFile, deleteFile, downloadFile } = useFileStore();
+
+  if (!selectedFile) return null;
+
+  const handleDownload = async () => {
+    try {
+      toast.info("Preparing download...", { description: `Downloading ${selectedFile.name}` });
+      await downloadFile(selectedFile.id, selectedFile.name);
+      toast.success("Download completed", { description: `${selectedFile.name} saved successfully.` });
+    } catch (err: unknown) {
+      toast.error("Download failed", {
+        description: err instanceof Error ? err.message : "Could not download file payload.",
+      });
+    }
+  };
 
   if (!selectedFile) return null;
 
@@ -119,9 +133,7 @@ export function FilePreviewDrawer() {
                   variant="outline"
                   size="sm"
                   leftIcon={<Download className="h-3.5 w-3.5" />}
-                  onClick={() =>
-                    toast.success("Download started", { description: `Downloading ${selectedFile.name}` })
-                  }
+                  onClick={handleDownload}
                 >
                   Download
                 </Button>

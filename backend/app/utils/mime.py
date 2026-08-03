@@ -2,10 +2,14 @@ import mimetypes
 
 MIME_TYPE_MAP = {
     "pdf": "application/pdf",
+    "doc": "application/msword",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "txt": "text/plain",
     "csv": "text/csv",
+    "xls": "application/vnd.ms-excel",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "json": "application/json",
     "md": "text/markdown",
     "markdown": "text/markdown",
@@ -18,8 +22,8 @@ MIME_TYPE_MAP = {
     "svg": "image/svg+xml",
     "parquet": "application/x-parquet",
     "sql": "application/sql",
-    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
+
 
 
 def get_mime_type(filename: str) -> str:

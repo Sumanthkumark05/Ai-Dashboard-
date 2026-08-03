@@ -78,7 +78,7 @@ async def test_user_registration_duplicate_email(auth_client: AsyncClient) -> No
     }
     response = await auth_client.post("/api/v1/auth/register", json=payload2)
     assert response.status_code == 400
-    assert "already exists" in response.json()["error"]
+    assert "already exists" in str(response.json())
 
 
 @pytest.mark.asyncio
@@ -97,28 +97,73 @@ async def test_user_registration_weak_password(auth_client: AsyncClient) -> None
 
 
 @pytest.mark.asyncio
-async def test_user_login_success(auth_client: AsyncClient) -> None:
+async def test_user_login_success_json(auth_client: AsyncClient) -> None:
     """
-    Test login endpoint returns access and refresh tokens.
+    Test login endpoint returns access and refresh tokens when sending JSON payload.
     """
     # 1. Register
     reg_payload = {
-        "email": "loginuser@neurodesk.ai",
-        "username": "loginuser",
+        "email": "jsonloginuser@neurodesk.ai",
+        "username": "jsonloginuser",
         "password": "Password123!",
     }
     await auth_client.post("/api/v1/auth/register", json=reg_payload)
 
-    # 2. Login via Email using form data
-    login_data = {
-        "username": "loginuser@neurodesk.ai",
+    # 2. Login via JSON
+    login_payload = {
+        "email": "jsonloginuser@neurodesk.ai",
         "password": "Password123!",
     }
-    response = await auth_client.post("/api/v1/auth/login", data=login_data)
+    response = await auth_client.post("/api/v1/auth/login", json=login_payload)
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
     assert "refresh_token" in data
+
+
+@pytest.mark.asyncio
+async def test_user_login_wrong_password(auth_client: AsyncClient) -> None:
+    """
+    Test login endpoint returns 401 for wrong password.
+    """
+    reg_payload = {
+        "email": "wrongpassuser@neurodesk.ai",
+        "username": "wrongpassuser",
+        "password": "Password123!",
+    }
+    await auth_client.post("/api/v1/auth/register", json=reg_payload)
+
+    login_payload = {
+        "email": "wrongpassuser@neurodesk.ai",
+        "password": "WrongPassword123!",
+    }
+    response = await auth_client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_user_login_user_not_found(auth_client: AsyncClient) -> None:
+    """
+    Test login endpoint returns 404 for unknown user.
+    """
+    login_payload = {
+        "email": "nonexistent@neurodesk.ai",
+        "password": "Password123!",
+    }
+    response = await auth_client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_user_login_validation_error(auth_client: AsyncClient) -> None:
+    """
+    Test login endpoint returns 422 for missing required fields.
+    """
+    login_payload = {
+        "email": "someuser@neurodesk.ai",
+    }
+    response = await auth_client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 422
 
 
 

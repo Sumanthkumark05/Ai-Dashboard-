@@ -3,15 +3,16 @@
 import * as React from "react";
 import { Calendar, Clock } from "lucide-react";
 import { CalendarEvent } from "../types";
-import { useCalendarStore } from "@/stores/calendar-store";
+import { useCalendarStore } from "@/features/calendar/store/calendar-store";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export function UpcomingEvents() {
   const { events, openDrawer } = useCalendarStore();
+  const todayStr = new Date().toISOString().split("T")[0];
 
-  const todayEvents = events.filter((e) => e.date === "2026-07-29");
-  const upcomingEvents = events.filter((e) => e.date !== "2026-07-29");
+  const todayEvents = events.filter((e) => e.date === todayStr || e.start_date === todayStr);
+  const upcomingEvents = events.filter((e) => e.date !== todayStr && e.start_date !== todayStr);
 
   return (
     <Card className="p-5 h-full">
@@ -29,7 +30,7 @@ export function UpcomingEvents() {
         {/* Today Section */}
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">
-            Today (July 29)
+            Today ({todayStr})
           </span>
 
           <div className="space-y-2">
@@ -41,17 +42,17 @@ export function UpcomingEvents() {
                   key={evt.id}
                   onClick={() => openDrawer(evt)}
                   className="rounded-lg border border-border bg-muted/20 p-3 hover:bg-accent/40 transition-colors cursor-pointer"
-                  style={{ borderLeftColor: evt.color, borderLeftWidth: "3px" }}
+                  style={{ borderLeftColor: evt.color || "#3b82f6", borderLeftWidth: "3px" }}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="text-xs font-semibold text-foreground truncate">{evt.title}</span>
-                    <Badge variant="outline" size="sm" className="text-[10px] shrink-0">
-                      {evt.category}
+                    <Badge variant="outline" size="sm" className="text-[10px] shrink-0 uppercase">
+                      {evt.event_type || evt.category}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
                     <Clock className="h-3 w-3" />
-                    <span>{evt.startTime} - {evt.endTime}</span>
+                    <span>{evt.time || evt.startTime || "09:00 AM"}</span>
                   </div>
                 </div>
               ))
@@ -62,7 +63,7 @@ export function UpcomingEvents() {
         {/* Upcoming Section */}
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">
-            Upcoming This Week
+            Upcoming Activity
           </span>
 
           <div className="space-y-2">
@@ -71,15 +72,15 @@ export function UpcomingEvents() {
                 key={evt.id}
                 onClick={() => openDrawer(evt)}
                 className="rounded-lg border border-border bg-muted/20 p-3 hover:bg-accent/40 transition-colors cursor-pointer"
-                style={{ borderLeftColor: evt.color, borderLeftWidth: "3px" }}
+                style={{ borderLeftColor: evt.color || "#3b82f6", borderLeftWidth: "3px" }}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-xs font-semibold text-foreground truncate">{evt.title}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">{evt.date}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">{evt.date || evt.start_date}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
                   <Clock className="h-3 w-3" />
-                  <span>{evt.startTime}</span>
+                  <span>{evt.time || evt.startTime || "09:00 AM"}</span>
                 </div>
               </div>
             ))}

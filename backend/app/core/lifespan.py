@@ -27,7 +27,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     • CORS Origin:  {settings.FRONTEND_URL}
     ===============================================================
     """
-    logger.info(startup_banner)
+    # Ensure DB tables exist
+    try:
+        from app.database.engine import engine
+        from app.database.base import Base
+        import app.models  # load models
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schema validated and synchronized.")
+    except Exception as exc:
+        logger.warning(f"Could not auto-create DB schema on startup: {exc}")
 
     yield
 

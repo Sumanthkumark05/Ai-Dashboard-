@@ -8,13 +8,54 @@ import {
   WorkspacePreferences,
   AccessibilitySettings,
 } from "../types";
-import {
-  initialProfileData,
-  initialAppearanceData,
-  initialNotificationData,
-  initialWorkspaceData,
-  initialAccessibilityData,
-} from "../mock/settings-mock-data";
+
+const defaultProfile: UserProfileSettings = {
+  avatarUrl: "",
+  fullName: "Workspace User",
+  email: "user@neurodesk.ai",
+  jobTitle: "Software Engineer",
+  company: "NeuroDesk",
+  phone: "+1 (555) 000-0000",
+  location: "San Francisco, CA",
+  bio: "AI SaaS Workspace User",
+};
+
+const defaultAppearance: AppearanceSettings = {
+  theme: "dark",
+  compactLayout: false,
+  reducedMotion: false,
+  sidebarDefaultState: "expanded",
+};
+
+const defaultNotifications: NotificationPreferences = {
+  emailNotifications: true,
+  desktopNotifications: true,
+  aiUpdates: true,
+  workspaceActivity: true,
+  teamActivity: true,
+  calendarReminders: true,
+  securityAlerts: true,
+  marketingEmails: false,
+};
+
+const defaultWorkspace: WorkspacePreferences = {
+  defaultView: "tree",
+  startPage: "dashboard",
+  recentFilesLimit: 10,
+  autoSave: true,
+  showLineNumbers: true,
+  documentFontSize: 14,
+  documentWidth: "default",
+};
+
+const defaultAccessibility: AccessibilitySettings = {
+  highContrast: false,
+  largeText: false,
+  keyboardShortcuts: true,
+  focusHighlight: true,
+  screenReaderOptimisations: false,
+  reducedMotion: false,
+};
 
 interface SettingsState {
   activeSection: SettingsSection;
@@ -44,11 +85,11 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       activeSection: "profile",
-      profile: initialProfileData,
-      appearance: initialAppearanceData,
-      notifications: initialNotificationData,
-      workspace: initialWorkspaceData,
-      accessibility: initialAccessibilityData,
+      profile: defaultProfile,
+      appearance: defaultAppearance,
+      notifications: defaultNotifications,
+      workspace: defaultWorkspace,
+      accessibility: defaultAccessibility,
       searchQuery: "",
       isDirty: false,
       isResetOpen: false,
@@ -89,11 +130,11 @@ export const useSettingsStore = create<SettingsState>()(
 
       resetToDefaults: () =>
         set({
-          profile: initialProfileData,
-          appearance: initialAppearanceData,
-          notifications: initialNotificationData,
-          workspace: initialWorkspaceData,
-          accessibility: initialAccessibilityData,
+          profile: defaultProfile,
+          appearance: defaultAppearance,
+          notifications: defaultNotifications,
+          workspace: defaultWorkspace,
+          accessibility: defaultAccessibility,
           isDirty: false,
           isResetOpen: false,
         }),

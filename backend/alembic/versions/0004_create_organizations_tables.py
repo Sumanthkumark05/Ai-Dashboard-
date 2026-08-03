@@ -1,3 +1,4 @@
+from sqlalchemy.dialects import postgresql as pg_dialect
 """Create Organizations Tables Migration
 
 Revision ID: 0004_create_organizations_tables
@@ -25,7 +26,7 @@ def upgrade() -> None:
     # 1. Organizations Table
     op.create_table(
         "organizations",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("slug", sa.String(length=120), nullable=False),
         sa.Column("description", sa.String(length=500), nullable=True),
@@ -41,7 +42,7 @@ def upgrade() -> None:
         sa.Column("workspace_limit", sa.Integer(), server_default="3", nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default="true", nullable=False),
         sa.Column("is_verified", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column("created_by", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("created_by", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("is_deleted", sa.Boolean(), server_default="false", nullable=False),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
@@ -56,9 +57,9 @@ def upgrade() -> None:
 
     op.create_table(
         "organization_members",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("organization_id", sa.CHAR(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("organization_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("role", user_role_enum, nullable=False),
         sa.Column("status", member_status_enum, server_default="active", nullable=False),
         sa.Column("joined_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
@@ -72,15 +73,15 @@ def upgrade() -> None:
     # 3. Organization Invitations Table
     op.create_table(
         "organization_invitations",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("organization_id", sa.CHAR(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("organization_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column("role", user_role_enum, nullable=False),
         sa.Column("token", sa.String(length=255), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("status", invitation_status_enum, server_default="pending", nullable=False),
-        sa.Column("created_by", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("created_by", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )

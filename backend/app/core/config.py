@@ -88,7 +88,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = Field(default=None, description="Groq API Key")
     GOOGLE_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API Key")
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, description="Anthropic API Key")
-    DEFAULT_MODEL: str = Field(default="gpt-4o", description="Default AI Foundation Model")
+    DEFAULT_MODEL: str = Field(default="openai/gpt-oss-120b", description="Default AI Foundation Model")
     MODEL_TEMPERATURE: float = Field(default=0.7, description="AI Sampling Temperature (0.0 - 2.0)")
     MAX_TOKENS: int = Field(default=4096, description="Max Token Generation Limit")
 

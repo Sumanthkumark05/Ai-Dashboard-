@@ -80,6 +80,16 @@ class DatasetResponse(BaseModel):
     updated_at: datetime
 
 
+class DatasetUploadResponse(BaseModel):
+    """
+    Response schema for dataset file upload.
+    """
+
+    success: bool = True
+    message: str = "Dataset uploaded successfully."
+    dataset: DatasetResponse
+
+
 class DatasetListResponse(BaseModel):
     """
     Pydantic schema for paginated dataset list.

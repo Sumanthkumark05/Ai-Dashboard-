@@ -9,6 +9,14 @@ FORBIDDEN_EXTENSIONS = {
 }
 
 
+def is_executable_extension(extension: str) -> bool:
+    """
+    Returns True if extension is in forbidden executable extensions list.
+    """
+    ext = extension.lower().lstrip(".")
+    return ext in FORBIDDEN_EXTENSIONS
+
+
 def sanitize_filename(original_filename: str) -> str:
     """
     Sanitizes filename by removing path traversal characters and non-alphanumeric chars.
@@ -33,7 +41,7 @@ def generate_unique_filename(original_filename: str) -> str:
         ext = parts[-1].lower()
 
     # Check for executable / dangerous extensions
-    if ext in FORBIDDEN_EXTENSIONS:
+    if is_executable_extension(ext):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Forbidden file extension '.{ext}'. Executable files are prohibited.",
@@ -42,7 +50,7 @@ def generate_unique_filename(original_filename: str) -> str:
     # Check for double extensions (e.g., file.php.jpg)
     if len(parts) > 2:
         secondary_ext = parts[-2].lower()
-        if secondary_ext in FORBIDDEN_EXTENSIONS:
+        if is_executable_extension(secondary_ext):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Suspicious double extension detected (.{secondary_ext}.{ext}). Upload rejected.",

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neurodesk-api
+  labels:
+    app: neurodesk-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: neurodesk-api
+  template:
+    metadata:
+      labels:
+        app: neurodesk-api
+    spec:
+      containers:
+      - name: api
+        image: neurodesk/api:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: neurodesk-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neurodesk-worker
+  labels:
+    app: neurodesk-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neurodesk-worker
+  template:
+    metadata:
+      labels:
+        app: neurodesk-worker
+    spec:
+      containers:
+      - name: worker
+        image: neurodesk/worker:latest
+        envFrom:
+        - configMapRef:
+            name: neurodesk-config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"

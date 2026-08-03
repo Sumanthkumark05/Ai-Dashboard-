@@ -173,3 +173,53 @@ async def test_workspace_member_management(ws_client: AsyncClient) -> None:
     )
     assert members_resp.status_code == 200
     assert len(members_resp.json()) == 2
+
+
+@pytest.mark.asyncio
+async def test_workspace_storage_analytics(ws_client: AsyncClient) -> None:
+    """
+    Test workspace storage calculation API endpoint returns live bytes, formatted strings, and counts.
+    """
+    reg_resp = await ws_client.post(
+        "/api/v1/auth/register",
+        json={"email": "storageuser@neurodesk.ai", "username": "storageuser", "password": "Password123!"},
+    )
+    token = reg_resp.json()["data"]["tokens"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    org_resp = await ws_client.post(
+        "/api/v1/organizations", json={"name": "Storage Test Org"}, headers=headers
+    )
+    headers["X-Organization-ID"] = org_resp.json()["id"]
+
+    ws_resp = await ws_client.post(
+        "/api/v1/workspaces", json={"name": "Storage Test WS"}, headers=headers
+    )
+    ws_id = ws_resp.json()["id"]
+    headers["X-Workspace-ID"] = ws_id
+
+    # Query initial empty storage
+    st_resp = await ws_client.get(f"/api/v1/workspaces/{ws_id}/storage", headers=headers)
+    assert st_resp.status_code == 200
+    st_data = st_resp.json()
+    assert st_data["totalFiles"] == 0
+    assert st_data["usedBytes"] == 0
+    assert st_data["usedFormatted"] == "0 B"
+
+    # Upload a file
+    file_payload = ("productivity_report.csv", b"id,task,status\n1,R&D,Completed\n", "text/csv")
+    up_resp = await ws_client.post(
+        "/api/v1/files/upload",
+        files={"file": file_payload},
+        headers=headers,
+    )
+    assert up_resp.status_code == 201
+
+    # Query storage after file upload
+    st_resp2 = await ws_client.get(f"/api/v1/workspaces/{ws_id}/storage", headers=headers)
+    assert st_resp2.status_code == 200
+    st_data2 = st_resp2.json()
+    assert st_data2["totalFiles"] == 1
+    assert st_data2["usedBytes"] == 31
+    assert st_data2["usedFormatted"] == "31 B"
+

@@ -62,21 +62,28 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+from app.middleware.rate_limit import RateLimitMiddleware
+
+
 def register_middlewares(app: FastAPI) -> None:
     """
     Register all application middlewares in correct order.
     """
-    # 1. Custom Security Headers
+    # 1. Rate Limiting & Payload Size Validation
+    app.add_middleware(RateLimitMiddleware)
+
+    # 2. Custom Security Headers
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # 2. Request Timing & Logging
+    # 3. Request Timing & Logging
     app.add_middleware(RequestLoggingMiddleware)
 
-    # 3. Request ID Tracing
+    # 4. Request ID Tracing
     app.add_middleware(RequestIDMiddleware)
 
-    # 4. GZip Compression for payloads >= 1000 bytes
+    # 5. GZip Compression for payloads >= 1000 bytes
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 
     # 5. CORS Configuration
     app.add_middleware(

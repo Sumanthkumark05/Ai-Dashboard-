@@ -1,7 +1,29 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { WorkspaceFolder, WorkspacePage, WorkspaceViewMode } from "../types";
-import { initialWorkspaceFolders, initialWorkspacePages } from "../mock/workspace-mock-data";
+
+const defaultFolders: WorkspaceFolder[] = [
+  { id: "fld_1", name: "Engineering Specs", icon: "📁", isExpanded: true },
+  { id: "fld_2", name: "Product Strategy", icon: "📁", isExpanded: true },
+];
+
+const defaultPages: WorkspacePage[] = [
+  {
+    id: "pg_1",
+    title: "NeuroDesk Platform Spec",
+    icon: "📄",
+    folderId: "fld_1",
+    content: "<h1>NeuroDesk SaaS Architecture Overview</h1><p>System documentation and REST endpoint specifications.</p>",
+    createdBy: "Workspace Member",
+    createdDate: "Today",
+    updatedDate: "Just now",
+    tags: ["Architecture", "Production"],
+    isFavourite: true,
+    isPinned: true,
+    wordCount: 120,
+    readingTime: "1 min read",
+  },
+];
 
 interface WorkspaceState {
   folders: WorkspaceFolder[];
@@ -32,14 +54,14 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set, get) => ({
-      folders: initialWorkspaceFolders,
-      pages: initialWorkspacePages,
-      selectedPageId: initialWorkspacePages[0].id,
+      folders: defaultFolders,
+      pages: defaultPages,
+      selectedPageId: defaultPages[0].id,
       viewMode: "tree",
       searchQuery: "",
       isSidebarOpen: true,
       isInfoPanelOpen: true,
-      expandedFolders: { fld_1: true, fld_2: true, fld_3: false },
+      expandedFolders: { fld_1: true, fld_2: true },
       isLoading: false,
 
       selectPage: (id) => set({ selectedPageId: id }),
@@ -105,7 +127,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           icon: "📄",
           folderId,
           content: initialContent || `<h1>${title || "Untitled Document"}</h1><p>Start writing your notes...</p>`,
-          createdBy: "Alex Vance",
+          createdBy: "Workspace Member",
           createdDate: "Today",
           updatedDate: "Just now",
           tags: ["Draft"],
@@ -140,27 +162,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           "Meeting Notes": {
             title: "Weekly Engineering Standup Notes",
             icon: "📝",
-            content: "<h1>Weekly Engineering Standup</h1><h2>Attendees</h2><ul><li>Alex Vance</li><li>Sarah Chen</li></ul><h2>Agenda</h2><ol><li>Review AGY SDK deployment</li><li>Address production token latency</li></ol>",
+            content: "<h1>Weekly Engineering Standup</h1><h2>Attendees</h2><ul><li>Team Lead</li><li>Senior Engineer</li></ul><h2>Agenda</h2><ol><li>Review REST API deployment</li><li>Address production latency</li></ol>",
           },
           "Project Plan": {
             title: "Q3 AI SaaS Product Roadmap",
             icon: "🚀",
-            content: "<h1>Q3 Product Roadmap Plan</h1><h2>Milestones</h2><ul><li>Module 12 Workspace Release</li><li>Recharts Telemetry Optimization</li></ul>",
-          },
-          "Research Notes": {
-            title: "Vector DB Performance Analysis",
-            icon: "🔬",
-            content: "<h1>Vector Database Performance</h1><p>Benchmarking pgvector HNSW index queries against Qdrant cloud endpoints.</p>",
-          },
-          "Daily Journal": {
-            title: "Daily Engineering Log",
-            icon: "📔",
-            content: "<h1>Daily Engineering Journal</h1><p>Today's completed tasks, blockers, and tomorrow's focus areas.</p>",
-          },
-          "Brainstorm": {
-            title: "AI Feature Brainstorm Session",
-            icon: "💡",
-            content: "<h1>AI Feature Ideas</h1><ul><li>Automated code refactoring agent</li><li>Real-time token streaming visualization</li></ul>",
+            content: "<h1>Q3 Product Roadmap Plan</h1><h2>Milestones</h2><ul><li>Workspace Release</li><li>Telemetry Optimization</li></ul>",
           },
         };
 

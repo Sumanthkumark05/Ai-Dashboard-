@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.dependency import get_db
@@ -53,13 +54,38 @@ async def register(
     description="Authenticates user credentials and returns JWT Access and Refresh Tokens.",
 )
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    login_req = LoginRequest(
-        email_or_username=form_data.username,
-        password=form_data.password,
-    )
+    content_type = request.headers.get("content-type", "").lower()
+
+    if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+        form = await request.form()
+        username = str(form.get("username") or form.get("email") or "").strip()
+        password = str(form.get("password") or "")
+        if not username or not password:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Username and password fields are required in form data.",
+            )
+        login_req = LoginRequest(email_or_username=username, password=password)
+    else:
+        try:
+            body = await request.json()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid JSON payload provided.",
+            )
+        try:
+            login_req = LoginRequest.model_validate(body)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            )
+
+    logger.info(f"POST /api/v1/auth/login received request for identifier: {login_req.email_or_username or login_req.email}")
     repo = UserRepository(db)
     _, tokens = await AuthService.login_user(login_req, repo)
     return tokens

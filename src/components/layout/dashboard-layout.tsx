@@ -22,7 +22,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, []);
 
   React.useEffect(() => {
-    if (mounted && !isAuthenticated) {
+    if (mounted && isAuthenticated) {
+      import("@/stores/workspace-context-store").then(({ useWorkspaceContextStore }) => {
+        useWorkspaceContextStore.getState().fetchWorkspaces();
+      }).catch(() => {});
+    } else if (mounted && !isAuthenticated) {
       router.push("/login");
     }
   }, [mounted, isAuthenticated, router]);

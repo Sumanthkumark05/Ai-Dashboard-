@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarOff, CalendarPlus } from "lucide-react";
-import { useCalendarStore } from "@/stores/calendar-store";
+import { useCalendarStore } from "@/features/calendar/store/calendar-store";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Button } from "@/components/ui/button";
 
@@ -17,8 +17,8 @@ export function CalendarEmptyState() {
   return (
     <EmptyState
       icon={<CalendarOff className="h-10 w-10 text-muted-foreground/60" />}
-      title="No events scheduled"
-      description="No calendar events matched your search query or category filter. Try clearing filters or create a new event."
+      title="No upcoming events."
+      description="No calendar events found for the active workspace. Create a new event or add scheduling dates to your workspace."
       action={
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleReset}>

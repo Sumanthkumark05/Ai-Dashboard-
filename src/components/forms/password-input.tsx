@@ -6,7 +6,7 @@ import { Input, type InputProps } from "./input";
 import { Button } from "@/components/ui/button";
 
 export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, leftIcon = <Lock className="h-4 w-4" />, ...props }, ref) => {
+  ({ className, leftIcon = <Lock className="h-4 w-4 shrink-0" />, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
 
     return (
@@ -19,16 +19,16 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
           <Button
             type="button"
             variant="ghost"
-            size="xs"
-            className="h-6 w-6 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="h-10 w-10 min-h-[40px] min-w-[40px] p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer inline-flex items-center justify-center shrink-0 select-none"
             onClick={() => setShowPassword((prev) => !prev)}
-            tabIndex={-1}
             aria-label={showPassword ? "Hide password" : "Show password"}
+            title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4" />
+              <EyeOff className="h-5 w-5 shrink-0 stroke-[1.8]" aria-hidden="true" />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye className="h-5 w-5 shrink-0 stroke-[1.8]" aria-hidden="true" />
             )}
           </Button>
         }

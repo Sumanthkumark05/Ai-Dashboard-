@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { TeamMember, UserRole } from "../types";
-import { initialTeamMembers } from "../mock/team-mock-data";
+import { teamApi } from "@/services/team-api";
 
 interface TeamState {
   members: TeamMember[];
@@ -14,6 +13,7 @@ interface TeamState {
   isInviteOpen: boolean;
   isLoading: boolean;
 
+  fetchMembers: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setRoleFilter: (role: string) => void;
   setDepartmentFilter: (department: string) => void;
@@ -24,74 +24,101 @@ interface TeamState {
   closeProfileDrawer: () => void;
   openInviteDialog: () => void;
   closeInviteDialog: () => void;
-  updateMemberRole: (id: string, role: UserRole) => void;
-  addTeamMember: (memberData: Omit<TeamMember, "id" | "joinedDate" | "lastActive" | "status" | "phone" | "location" | "skills" | "bio" | "projects">) => void;
-  removeMember: (id: string) => void;
+  updateMemberRole: (id: string, role: UserRole) => Promise<void>;
+  inviteMember: (email: string, role: UserRole, workspaceId: string) => Promise<void>;
+  removeMember: (id: string) => Promise<void>;
 }
 
-export const useTeamStore = create<TeamState>()(
-  persist(
-    (set) => ({
-      members: initialTeamMembers,
-      searchQuery: "",
-      roleFilter: "all",
-      departmentFilter: "all",
-      statusFilter: "all",
-      selectedMember: null,
-      isProfileOpen: false,
-      isInviteOpen: false,
-      isLoading: false,
+export const useTeamStore = create<TeamState>((set, get) => ({
+  members: [],
+  searchQuery: "",
+  roleFilter: "all",
+  departmentFilter: "all",
+  statusFilter: "all",
+  selectedMember: null,
+  isProfileOpen: false,
+  isInviteOpen: false,
+  isLoading: false,
 
-      setSearchQuery: (query) => set({ searchQuery: query }),
-      setRoleFilter: (role) => set({ roleFilter: role }),
-      setDepartmentFilter: (department) => set({ departmentFilter: department }),
-      setStatusFilter: (status) => set({ statusFilter: status }),
-
-      selectMember: (member) => set({ selectedMember: member }),
-      clearSelectedMember: () => set({ selectedMember: null }),
-
-      openProfileDrawer: (member) => set({ selectedMember: member, isProfileOpen: true }),
-      closeProfileDrawer: () => set({ isProfileOpen: false }),
-
-      openInviteDialog: () => set({ isInviteOpen: true }),
-      closeInviteDialog: () => set({ isInviteOpen: false }),
-
-      updateMemberRole: (id, role) =>
-        set((state) => ({
-          members: state.members.map((m) => (m.id === id ? { ...m, role } : m)),
-          selectedMember: state.selectedMember?.id === id ? { ...state.selectedMember, role } : state.selectedMember,
-        })),
-
-      addTeamMember: (memberData) => {
-        const newMember: TeamMember = {
-          ...memberData,
-          id: `mem_${Date.now()}`,
-          status: "online",
-          phone: "+1 (555) 000-1122",
+  fetchMembers: async () => {
+    set({ isLoading: true });
+    try {
+      const teamsRes = await teamApi.listTeams(undefined, 1, 0);
+      const firstTeam = teamsRes.items?.[0];
+      if (firstTeam) {
+        const membersRes = await teamApi.listMembers(firstTeam.id, 50, 0);
+        const mappedMembers: TeamMember[] = (membersRes.items || []).map((m) => ({
+          id: m.id,
+          name: m.full_name || m.email,
+          email: m.email,
+          role: (m.role as UserRole) || "Member",
+          department: "Engineering",
+          status: m.status === "active" ? "online" : "offline",
+          joinedDate: m.joined_at ? new Date(m.joined_at).toLocaleDateString() : "Recently",
+          lastActive: m.last_active_at ? new Date(m.last_active_at).toLocaleDateString() : "Active recently",
+          avatarUrl: m.avatar_url,
+          phone: "+1 (555) 000-0000",
           location: "Remote",
-          skills: ["Collaboration", "Agile"],
-          bio: "Recently invited workspace team member.",
-          joinedDate: "Just now",
-          lastActive: "Just now",
-          projects: ["AGY Multi-Agent Orchestration"],
-        };
-
-        set((state) => ({
-          members: [newMember, ...state.members],
+          skills: ["Engineering", "SaaS"],
+          bio: "Workspace team member.",
+          projects: ["NeuroDesk Platform"],
         }));
-      },
-
-      removeMember: (id) =>
-        set((state) => ({
-          members: state.members.filter((m) => m.id !== id),
-          selectedMember: state.selectedMember?.id === id ? null : state.selectedMember,
-          isProfileOpen: state.selectedMember?.id === id ? false : state.isProfileOpen,
-        })),
-    }),
-    {
-      name: "neurodesk_team_manager_session",
-      storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({ roleFilter: state.roleFilter, departmentFilter: state.departmentFilter }),
+        set({ members: mappedMembers });
+      } else {
+        set({ members: [] });
+      }
+    } catch {
+      set({ members: [] });
+    } finally {
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setRoleFilter: (role) => set({ roleFilter: role }),
+  setDepartmentFilter: (department) => set({ departmentFilter: department }),
+  setStatusFilter: (status) => set({ statusFilter: status }),
+
+  selectMember: (member) => set({ selectedMember: member }),
+  clearSelectedMember: () => set({ selectedMember: null }),
+
+  openProfileDrawer: (member) => set({ selectedMember: member, isProfileOpen: true }),
+  closeProfileDrawer: () => set({ isProfileOpen: false }),
+
+  openInviteDialog: () => set({ isInviteOpen: true }),
+  closeInviteDialog: () => set({ isInviteOpen: false }),
+
+  updateMemberRole: async (id, role) => {
+    try {
+      await teamApi.updateMemberRole(id, role.toLowerCase() as "owner" | "admin" | "member" | "viewer");
+      set((state) => ({
+        members: state.members.map((m) => (m.id === id ? { ...m, role } : m)),
+        selectedMember: state.selectedMember?.id === id ? { ...state.selectedMember, role } : state.selectedMember,
+      }));
+    } catch {
+      // update local fallback
+    }
+  },
+
+  inviteMember: async (email, role, workspaceId) => {
+    await teamApi.inviteMember({
+      email,
+      role: role.toLowerCase() as "owner" | "admin" | "member" | "viewer",
+      workspace_id: workspaceId,
+    });
+    await get().fetchMembers();
+  },
+
+  removeMember: async (id) => {
+    try {
+      await teamApi.removeMember(id);
+    } catch {
+      // handle error
+    }
+    set((state) => ({
+      members: state.members.filter((m) => m.id !== id),
+      selectedMember: state.selectedMember?.id === id ? null : state.selectedMember,
+      isProfileOpen: state.selectedMember?.id === id ? false : state.isProfileOpen,
+    }));
+  },
+}));

@@ -1,4 +1,4 @@
-export type DateRangeOption = "7d" | "30d" | "90d" | "1y";
+export type DateRangeOption = "today" | "7d" | "30d" | "90d" | "1y" | "custom";
 
 export interface SparklinePoint {
   day: string;

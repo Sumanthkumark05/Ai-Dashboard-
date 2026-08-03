@@ -2,8 +2,6 @@
 
 import * as React from "react";
 import { ChevronDown, Trash2, Download, Bot, Check } from "lucide-react";
-import { modelOptions } from "../mock/chat-mock-data";
-import { ModelOption } from "../types";
 import { useChatStore } from "@/stores/chat-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +15,27 @@ import {
 } from "@/components/navigation/dropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/feedback/tooltip";
 import { toast } from "@/components/feedback/toast";
+
+const modelOptions = [
+  {
+    id: "openai-gpt-oss-120b",
+    name: "openai/gpt-oss-120b",
+    displayName: "Groq GPT-OSS 120B",
+    description: "Groq API ultra-fast 120B model for flagship performance",
+  },
+  {
+    id: "llama-3-70b",
+    name: "llama-3.3-70b-versatile",
+    displayName: "Groq Llama 3.3 70B",
+    description: "Versatile open weights model on Groq inference",
+  },
+  {
+    id: "mixtral-8x7b",
+    name: "mixtral-8x7b-32768",
+    displayName: "Groq Mixtral 8x7B",
+    description: "High-speed MoE model with 32k context window",
+  },
+];
 
 export function ChatHeader() {
   const {
@@ -69,7 +88,7 @@ export function ChatHeader() {
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel className="text-xs">Select Intelligence Model</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {modelOptions.map((opt: ModelOption) => (
+            {modelOptions.map((opt) => (
               <DropdownMenuItem
                 key={opt.id}
                 onClick={() => {
@@ -79,7 +98,7 @@ export function ChatHeader() {
                 className="flex flex-col items-start gap-0.5 cursor-pointer py-2"
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="font-semibold text-xs text-foreground">{opt.name}</span>
+                  <span className="font-semibold text-xs text-foreground">{opt.displayName || opt.name}</span>
                   {activeModel === opt.name && <Check className="h-3.5 w-3.5 text-primary" />}
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-tight">{opt.description}</p>

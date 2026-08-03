@@ -1,6 +1,7 @@
 import uuid
 from typing import Callable, List, Optional
 from fastapi import Depends, Header, HTTPException, status
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import WorkspaceRole
@@ -24,6 +25,7 @@ async def get_current_workspace(
     """
     FastAPI Dependency establishing Workspace context within the current Organization.
     Inspects 'X-Workspace-ID' header or defaults to user's first accessible workspace in the org.
+    Auto-repairing missing workspaces on-the-fly.
     """
     ws_member_repo = WorkspaceMemberRepository(db)
     ws_repo = WorkspaceRepository(db)
@@ -37,11 +39,22 @@ async def get_current_workspace(
         # Fallback to org workspaces if public/internal
         org_workspaces = await ws_repo.get_organization_workspaces(current_org.id)
         if not org_workspaces:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No workspaces found in this organization.",
+            from app.services.auth_service import AuthService
+            logger.info(f"Auto-repairing missing workspace for User ID: {current_user.id} in Org ID: {current_org.id}")
+            await AuthService.provision_user_defaults(current_user, db)
+            user_workspaces = await ws_member_repo.get_user_workspaces(
+                current_user.id, current_org.id
             )
-        user_workspaces = org_workspaces
+            if not user_workspaces:
+                user_workspaces = await ws_repo.get_organization_workspaces(current_org.id)
+        else:
+            user_workspaces = org_workspaces
+
+    if not user_workspaces:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No workspaces found in this organization.",
+        )
 
     # 2. Match Target Workspace ID if header specified
     target_workspace: Optional[Workspace] = None
@@ -50,20 +63,36 @@ async def get_current_workspace(
             target_uuid = uuid.UUID(x_workspace_id)
             target_workspace = next((w for w in user_workspaces if w.id == target_uuid), None)
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid X-Workspace-ID header format.",
-            )
+            target_workspace = None
 
-        if not target_workspace:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User does not have access to the specified workspace.",
-            )
+        if not target_workspace and user_workspaces:
+            target_workspace = user_workspaces[0]
     else:
-        target_workspace = user_workspaces[0]
+        target_workspace = user_workspaces[0] if user_workspaces else None
+
+    if not target_workspace:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No workspaces found in this organization.",
+        )
 
     return target_workspace
+
+
+async def get_optional_workspace(
+    x_workspace_id: Optional[str] = Header(None, alias="X-Workspace-ID"),
+    current_org: Organization = Depends(get_current_organization),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[Workspace]:
+    """
+    FastAPI Dependency that resolves active Workspace context or returns None when no workspace exists.
+    Never throws HTTP exceptions.
+    """
+    try:
+        return await get_current_workspace(x_workspace_id, current_org, current_user, db)
+    except HTTPException:
+        return None
 
 
 def require_workspace_role(allowed_roles: List[WorkspaceRole]) -> Callable:

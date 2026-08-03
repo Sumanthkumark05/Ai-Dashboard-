@@ -4,6 +4,8 @@ import * as React from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebarStore } from "@/stores/sidebar-store";
+import { WorkspaceSwitcher } from "./workspace-switcher";
+import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-modal";
 import { DashboardBreadcrumb } from "./dashboard-breadcrumb";
 import { SearchBar } from "./search-bar";
 import { NewSessionButton } from "./new-session-button";
@@ -16,19 +18,25 @@ export function Navbar() {
   const { toggleMobile } = useSidebarStore();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background/80 px-4 lg:px-6 backdrop-blur-md transition-all select-none gap-4 shrink-0">
-      {/* LEFT SECTION: Title & Breadcrumb */}
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card/85 px-4 lg:px-6 backdrop-blur-xl transition-all select-none gap-4 shrink-0">
+      {/* Create Workspace Modal Container */}
+      <CreateWorkspaceModal />
+
+      {/* LEFT SECTION: Title, Workspace Switcher & Breadcrumb */}
       <div className="flex items-center gap-3 shrink-0 min-w-0">
         {/* Mobile Hamburger Trigger */}
         <Button
           variant="ghost"
-          size="xs"
+          size="icon-sm"
           onClick={toggleMobile}
-          className="h-[40px] w-[40px] p-0 md:hidden text-muted-foreground hover:text-foreground rounded-xl shrink-0"
+          className="md:hidden text-muted-foreground hover:text-foreground shrink-0"
           aria-label="Open mobile navigation menu"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </Button>
+
+        {/* Workspace Switcher */}
+        <WorkspaceSwitcher />
 
         {/* Path Breadcrumbs */}
         <DashboardBreadcrumb />
@@ -40,7 +48,7 @@ export function Navbar() {
       </div>
 
       {/* RIGHT SECTION: Controls & Actions */}
-      <div className="flex items-center gap-3 sm:gap-4 lg:gap-5 shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         {/* New Session Button */}
         <NewSessionButton />
 
@@ -59,4 +67,3 @@ export function Navbar() {
     </header>
   );
 }
-

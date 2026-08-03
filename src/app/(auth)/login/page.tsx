@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/forms/input";
 import { PasswordInput } from "@/components/forms/password-input";
-import { Checkbox } from "@/components/forms/checkbox";
 import { Label } from "@/components/forms/label";
 import { Alert, AlertDescription } from "@/components/feedback/alert";
 import { toast } from "@/components/feedback/toast";
@@ -45,7 +44,6 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
@@ -117,20 +115,12 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Remember Me Checkbox */}
-          <div className="flex items-center space-x-2 pt-1">
-            <Checkbox id="rememberMe" disabled={isLoading} {...register("rememberMe")} />
-            <Label htmlFor="rememberMe" className="text-xs font-normal text-muted-foreground cursor-pointer">
-              Remember me for 30 days
-            </Label>
-          </div>
-
           {/* Submit Button */}
           <Button
             type="submit"
             variant="primary"
             size="md"
-            className="w-full mt-2"
+            className="w-full pt-1"
             isLoading={isLoading}
           >
             Sign in
@@ -170,13 +160,4 @@ export default function LoginPage() {
       </div>
     </AuthLayout>
   );
-}
-
-// Router helper hook wrapper for Next.js App Router navigation resilience
-function Router() {
-  try {
-    return useRouter();
-  } catch {
-    return { push: () => {} };
-  }
 }

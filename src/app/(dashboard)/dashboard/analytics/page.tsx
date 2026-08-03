@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { useAnalyticsStore } from "@/stores/analytics-store";
 import { AnalyticsHeader } from "@/features/analytics/components/analytics-header";
 import { FilterBar } from "@/features/analytics/components/filter-bar";
@@ -15,9 +16,31 @@ import { InsightsPanel } from "@/features/analytics/components/insights-panel";
 import { ActivityTable } from "@/features/analytics/components/activity-table";
 import { ExportDialog } from "@/features/analytics/components/export-dialog";
 import { AnalyticsSkeleton } from "@/features/analytics/components/analytics-skeleton";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function AnalyticsDashboardPage() {
-  const { isRefreshing } = useAnalyticsStore();
+  const { isLoading, isRefreshing, error, fetchTelemetry, triggerRefresh } = useAnalyticsStore();
+
+  React.useEffect(() => {
+    fetchTelemetry();
+
+    const handleDataChange = () => {
+      fetchTelemetry();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("neurodesk:data_changed", handleDataChange);
+      window.addEventListener("neurodesk:workspace_changed", handleDataChange);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("neurodesk:data_changed", handleDataChange);
+        window.removeEventListener("neurodesk:workspace_changed", handleDataChange);
+      }
+    };
+  }, [fetchTelemetry]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -27,7 +50,26 @@ export default function AnalyticsDashboardPage() {
       {/* Filter Bar Controls */}
       <FilterBar />
 
-      {isRefreshing ? (
+      {error ? (
+        <Card className="p-6 bg-destructive/10 border-destructive/20 text-destructive flex flex-col items-center justify-center text-center gap-3">
+          <AlertCircle className="h-8 w-8 text-destructive shrink-0" />
+          <div>
+            <h3 className="text-base font-bold">Unable to load analytics.</h3>
+            <p className="text-xs text-destructive/80 mt-1">
+              Could not establish connection to database or system telemetry endpoint.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={triggerRefresh}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 mt-2"
+          >
+            Retry Connection
+          </Button>
+        </Card>
+      ) : isLoading || isRefreshing ? (
         <AnalyticsSkeleton />
       ) : (
         <>

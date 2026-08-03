@@ -36,14 +36,35 @@ import { toast } from "@/components/feedback/toast";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/constants";
 
-const typeIconMap: Record<string, React.ReactNode> = {
-  pdf: <FileText className="h-6 w-6 text-danger" />,
-  code: <FileCode className="h-6 w-6 text-info" />,
-  doc: <FileText className="h-6 w-6 text-primary" />,
-  image: <ImageIcon className="h-6 w-6 text-success" />,
-  video: <Film className="h-6 w-6 text-purple-500" />,
-  archive: <Archive className="h-6 w-6 text-warning" />,
-  folder: <Folder className="h-6 w-6 text-amber-500 fill-amber-500/20" />,
+const typeIconMap: Record<string, { icon: React.ReactNode; bgClass: string }> = {
+  pdf: {
+    icon: <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />,
+    bgClass: "bg-red-50 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/50",
+  },
+  code: {
+    icon: <FileCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+    bgClass: "bg-blue-50 dark:bg-blue-950/40 border-blue-200/50 dark:border-blue-900/50",
+  },
+  doc: {
+    icon: <FileText className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
+    bgClass: "bg-sky-50 dark:bg-sky-950/40 border-sky-200/50 dark:border-sky-900/50",
+  },
+  image: {
+    icon: <ImageIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
+    bgClass: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/50 dark:border-emerald-900/50",
+  },
+  video: {
+    icon: <Film className="h-5 w-5 text-purple-600 dark:text-purple-400" />,
+    bgClass: "bg-purple-50 dark:bg-purple-950/40 border-purple-200/50 dark:border-purple-900/50",
+  },
+  archive: {
+    icon: <Archive className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+    bgClass: "bg-amber-50 dark:bg-amber-950/40 border-amber-200/50 dark:border-amber-900/50",
+  },
+  folder: {
+    icon: <Folder className="h-5 w-5 text-amber-500 fill-amber-500/20" />,
+    bgClass: "bg-amber-50 dark:bg-amber-950/40 border-amber-200/50 dark:border-amber-900/50",
+  },
 };
 
 export interface FileCardProps {
@@ -51,11 +72,27 @@ export interface FileCardProps {
 }
 
 export function FileCard({ file }: FileCardProps) {
-  const { openPreviewDrawer, toggleFavoriteFile, deleteFile, duplicateFile, renameFile } = useFileStore();
+  const { openPreviewDrawer, toggleFavoriteFile, deleteFile, duplicateFile, renameFile, downloadFile } = useFileStore();
   const [isRenaming, setIsRenaming] = React.useState(false);
   const [newName, setNewName] = React.useState(file.name);
 
-  const icon = typeIconMap[file.type] || <File className="h-6 w-6 text-muted-foreground" />;
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      toast.info("Preparing download...", { description: `Downloading ${file.name}` });
+      await downloadFile(file.id, file.name);
+      toast.success("Download completed", { description: `${file.name} saved successfully.` });
+    } catch (err: unknown) {
+      toast.error("Download failed", {
+        description: err instanceof Error ? err.message : "Could not download file payload.",
+      });
+    }
+  };
+
+  const typeConfig = typeIconMap[file.type] || {
+    icon: <File className="h-5 w-5 text-muted-foreground" />,
+    bgClass: "bg-muted border-border",
+  };
   const initials = getInitials(file.owner.name);
 
   const handleSaveRename = () => {
@@ -68,10 +105,10 @@ export function FileCard({ file }: FileCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
-      whileHover={{ y: -3 }}
+      transition={{ duration: 0.18 }}
+      whileHover={{ y: -2 }}
     >
       <Card
         onClick={() => openPreviewDrawer(file)}
@@ -79,26 +116,26 @@ export function FileCard({ file }: FileCardProps) {
       >
         {/* Header Controls */}
         <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted border border-border">
-            {icon}
+          <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border", typeConfig.bgClass)}>
+            {typeConfig.icon}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {/* Star Favorite Toggle */}
             <Button
               variant="ghost"
-              size="xs"
+              size="icon-xs"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleFavoriteFile(file.id);
               }}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
+              className="text-muted-foreground hover:text-amber-500"
               aria-label={file.isFavorite ? "Unfavorite file" : "Favorite file"}
             >
               <Star
                 className={cn(
-                  "h-4 w-4 transition-colors",
-                  file.isFavorite ? "fill-amber-400 text-amber-400" : "text-muted-foreground opacity-60"
+                  "h-3.5 w-3.5 transition-colors",
+                  file.isFavorite ? "fill-amber-400 text-amber-400" : "text-muted-foreground/50"
                 )}
               />
             </Button>
@@ -108,11 +145,11 @@ export function FileCard({ file }: FileCardProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="xs"
+                  size="icon-xs"
                   onClick={(e) => e.stopPropagation()}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
@@ -138,10 +175,7 @@ export function FileCard({ file }: FileCardProps) {
                   <span>Duplicate</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toast.success("Download started", { description: `Downloading ${file.name}` });
-                  }}
+                  onClick={handleDownload}
                   className="cursor-pointer text-xs"
                 >
                   <Download className="mr-2 h-3.5 w-3.5" />
@@ -175,7 +209,7 @@ export function FileCard({ file }: FileCardProps) {
         </div>
 
         {/* File Name & Metadata */}
-        <div className="mb-4">
+        <div className="mb-3">
           {isRenaming ? (
             <input
               type="text"
@@ -188,14 +222,14 @@ export function FileCard({ file }: FileCardProps) {
               onBlur={handleSaveRename}
               onClick={(e) => e.stopPropagation()}
               autoFocus
-              className="w-full text-xs font-semibold rounded border border-primary px-1 py-0.5"
+              className="w-full text-xs font-semibold rounded-md border border-primary px-2 py-1 bg-background"
             />
           ) : (
-            <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+            <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
               {file.name}
             </h4>
           )}
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
             <span>{file.size}</span>
             <span>•</span>
             <span>{file.modifiedDate}</span>
@@ -203,16 +237,16 @@ export function FileCard({ file }: FileCardProps) {
         </div>
 
         {/* Owner & Status Badge Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
+          <div className="flex items-center gap-1.5">
             <Avatar size="xs">
               <AvatarImage src={file.owner.avatarUrl} alt={file.owner.name} />
-              <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarFallback className="text-[9px] font-semibold">{initials}</AvatarFallback>
             </Avatar>
-            <span className="text-muted-foreground truncate max-w-[90px]">{file.owner.name}</span>
+            <span className="text-muted-foreground text-[11px] truncate max-w-[85px]">{file.owner.name}</span>
           </div>
 
-          <Badge variant={file.status === "Synced" ? "success" : "warning"} size="sm" className="text-[10px]">
+          <Badge variant={file.status === "Synced" ? "success" : "warning"} size="xs">
             {file.status}
           </Badge>
         </div>

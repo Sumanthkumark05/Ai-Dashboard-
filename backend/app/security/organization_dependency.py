@@ -1,6 +1,7 @@
 import uuid
 from typing import Callable, List, Optional
 from fastapi import Depends, Header, HTTPException, status
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import UserRole
@@ -21,17 +22,18 @@ async def get_current_organization(
     """
     FastAPI Dependency establishing multi-tenant Organization context.
     Inspects 'X-Organization-ID' header or defaults to user's first organization.
+    Auto-provisions missing organization resources for unprovisioned users on-the-fly.
     """
     member_repo = OrganizationMemberRepository(db)
-    org_repo = OrganizationRepository(db)
 
     # 1. Fetch user active organizations
     user_orgs = await member_repo.get_user_organizations(current_user.id)
     if not user_orgs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User does not belong to any active organization.",
-        )
+        # Import inside function to avoid circular dependencies
+        from app.services.auth_service import AuthService
+        logger.info(f"Auto-repairing missing organization context for User ID: {current_user.id}")
+        org = await AuthService.provision_user_defaults(current_user, db)
+        user_orgs = [org]
 
     # 2. Target Organization ID matching
     target_org: Optional[Organization] = None

@@ -3,10 +3,11 @@ import {
   Bot,
   BarChart3,
   Blocks,
+  Calendar,
+  Mail,
   Database,
-  Cpu,
   FileText,
-  MessageSquare,
+  Building2,
   Bell,
   Users,
   Settings,
@@ -33,11 +34,12 @@ export const navigationConfig: NavGroup[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "AI Chat", href: "/dashboard/ai-assistant", icon: Bot, badge: "New" },
       { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+      { title: "Workspaces", href: "/dashboard/workspace-manager", icon: Building2 },
       { title: "Workspace", href: "/dashboard/workspace", icon: Blocks },
+      { title: "Calendar", href: "/dashboard/calendar", icon: Calendar },
+      { title: "Company Mail", href: "/dashboard/company-mail", icon: Mail, badge: "Gmail" },
       { title: "Datasets", href: "/dashboard/files", icon: Database },
-      { title: "AI Models", href: "/dashboard/ai-models", icon: Cpu },
       { title: "Documents", href: "/dashboard/documents", icon: FileText },
-      { title: "Conversations", href: "/dashboard/conversations", icon: MessageSquare },
     ],
   },
   {
@@ -50,4 +52,5 @@ export const navigationConfig: NavGroup[] = [
     ],
   },
 ];
+
 

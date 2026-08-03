@@ -43,7 +43,6 @@ export function FileToolbar() {
           </SelectTrigger>
           <SelectContent align="end">
             <SelectItem value="all">All Files</SelectItem>
-            <SelectItem value="folder">Folders</SelectItem>
             <SelectItem value="document">Documents</SelectItem>
             <SelectItem value="pdf">PDF Files</SelectItem>
             <SelectItem value="image">Images</SelectItem>

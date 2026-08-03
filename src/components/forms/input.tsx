@@ -35,7 +35,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full space-y-1.5">
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3 flex items-center pointer-events-none text-muted-foreground">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none text-muted-foreground z-10 shrink-0">
               {leftIcon}
             </div>
           )}
@@ -43,11 +43,20 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={type}
             className={cn(
-              "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+              // Base styles
+              "flex h-9 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground shadow-xs transition-all duration-150",
+              "placeholder:text-muted-foreground/60",
+              "file:border-0 file:bg-transparent file:text-sm file:font-medium",
+              // Focus
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:border-ring",
+              // Disabled
+              "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/40",
+              // Icons
               leftIcon && "pl-9",
-              rightIcon && "pr-9",
-              hasError && "border-destructive focus-visible:ring-destructive",
-              hasSuccess && "border-success focus-visible:ring-success",
+              rightIcon && "pr-10",
+              // Validation
+              hasError && "border-destructive focus-visible:ring-destructive/30 focus-visible:border-destructive",
+              hasSuccess && "border-success focus-visible:ring-success/30 focus-visible:border-success",
               className
             )}
             ref={ref}
@@ -57,15 +66,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 flex items-center text-muted-foreground">
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-muted-foreground z-10 shrink-0">
               {rightIcon}
             </div>
           )}
         </div>
 
-        {/* Validation and Helper Text */}
+        {/* Validation Messages */}
         {typeof error === "string" && (
-          <p id={helperId} className="text-xs text-destructive font-medium">
+          <p id={helperId} className="text-xs text-destructive font-medium flex items-center gap-1">
             {error}
           </p>
         )}
@@ -75,7 +84,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
         {helperText && !error && !success && (
-          <p id={helperId} className="text-xs text-muted-foreground">
+          <p id={helperId} className="text-xs text-muted-foreground leading-relaxed">
             {helperText}
           </p>
         )}

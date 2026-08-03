@@ -18,7 +18,7 @@ export function SystemStatus() {
       type="button"
       onClick={toggleStatus}
       aria-label={`System Status: ${isOperational ? "Operational" : "Maintenance"}`}
-      className="relative hidden xl:flex h-10 items-center gap-2.5 px-3.5 rounded-xl border border-border/60 bg-card/50 hover:bg-card/90 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer select-none shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="relative hidden xl:inline-flex h-10 min-h-[40px] items-center justify-center gap-2.5 px-4 rounded-full border border-border/60 bg-card/50 hover:bg-card/90 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer select-none shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
         {isOperational && (
@@ -36,4 +36,3 @@ export function SystemStatus() {
     </button>
   );
 }
-

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarEvent } from "../types";
-import { useCalendarStore } from "@/stores/calendar-store";
+import { useCalendarStore } from "@/features/calendar/store/calendar-store";
 import { EventCard } from "./event-card";
 import { cn } from "@/lib/utils";
 

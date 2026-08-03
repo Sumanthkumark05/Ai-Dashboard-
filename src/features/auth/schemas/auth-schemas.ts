@@ -8,7 +8,6 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
 });
 
 export const passwordValidation = z

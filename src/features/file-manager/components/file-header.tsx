@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Upload, FolderPlus } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useFileStore } from "@/stores/file-store";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/feedback/toast";
 
 export function FileHeader() {
   const { openUploadDialog } = useFileStore();
@@ -21,19 +20,6 @@ export function FileHeader() {
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          leftIcon={<FolderPlus className="h-4 w-4" />}
-          onClick={() =>
-            toast.info("New Folder", {
-              description: "Folder creation modal preview.",
-            })
-          }
-        >
-          New Folder
-        </Button>
-
         <Button
           variant="primary"
           size="sm"

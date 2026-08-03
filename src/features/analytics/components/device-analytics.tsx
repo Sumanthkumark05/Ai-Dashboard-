@@ -2,10 +2,14 @@
 
 import * as React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { deviceData } from "../mock/analytics-mock-data";
-import { DeviceData } from "../types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+const deviceData = [
+  { device: "Desktop Web", percentage: 80, color: "#3b82f6" },
+  { device: "Mobile Browser", percentage: 15, color: "#10b981" },
+  { device: "API Client", percentage: 5, color: "#8b5cf6" },
+];
 
 export function DeviceAnalytics() {
   const [mounted, setMounted] = React.useState(false);
@@ -54,7 +58,7 @@ export function DeviceAnalytics() {
       </div>
 
       <div className="space-y-2">
-        {deviceData.map((d: DeviceData, idx: number) => (
+        {deviceData.map((d, idx) => (
           <div key={idx} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />

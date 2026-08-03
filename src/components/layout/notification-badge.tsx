@@ -16,7 +16,7 @@ export function NotificationBadge() {
         })
       }
       aria-label={`Notifications (${unreadCount} unread)`}
-      className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+      className="relative flex h-10 w-10 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
     >
       <Bell className="h-4 w-4 shrink-0" />
       {unreadCount > 0 && (

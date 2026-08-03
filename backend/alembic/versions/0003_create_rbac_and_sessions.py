@@ -1,3 +1,4 @@
+from sqlalchemy.dialects import postgresql as pg_dialect
 """Create RBAC and Sessions Tables Migration
 
 Revision ID: 0003_create_rbac_and_sessions
@@ -21,7 +22,7 @@ def upgrade() -> None:
     # 1. Permissions Table
     op.create_table(
         "permissions",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("description", sa.String(length=255), server_default="", nullable=False),
         sa.Column("resource", sa.String(length=50), nullable=False),
@@ -46,7 +47,7 @@ def upgrade() -> None:
     # 2. Roles Table
     op.create_table(
         "roles",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
         sa.Column("name", sa.String(length=50), nullable=False),
         sa.Column("description", sa.String(length=255), server_default="", nullable=False),
         sa.Column("is_system", sa.Boolean(), server_default="false", nullable=False),
@@ -69,15 +70,15 @@ def upgrade() -> None:
     # 3. Role Permissions Join Table
     op.create_table(
         "role_permissions",
-        sa.Column("role_id", sa.CHAR(36), sa.ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("permission_id", sa.CHAR(36), sa.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column("role_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column("permission_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
     )
 
     # 4. User Sessions Table
     op.create_table(
         "user_sessions",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("user_id", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("device_name", sa.String(length=100), nullable=True),
         sa.Column("browser", sa.String(length=100), nullable=True),
         sa.Column("os", sa.String(length=100), nullable=True),
@@ -98,8 +99,8 @@ def upgrade() -> None:
     # 5. Refresh Tokens Table
     op.create_table(
         "refresh_tokens",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("user_id", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("token_hash", sa.String(length=255), nullable=False),
         sa.Column("device_info", sa.String(length=255), nullable=True),
         sa.Column("is_revoked", sa.Boolean(), server_default="false", nullable=False),
@@ -114,8 +115,8 @@ def upgrade() -> None:
     # 6. Login History Table
     op.create_table(
         "login_history",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("user_id", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("login_time", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("logout_time", sa.DateTime(timezone=True), nullable=True),
         sa.Column("device", sa.String(length=100), nullable=True),

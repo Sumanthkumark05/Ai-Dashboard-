@@ -8,8 +8,19 @@ import { MessageList } from "@/features/ai-chat/components/message-list";
 import { PromptComposer } from "@/features/ai-chat/components/prompt-composer";
 
 export default function AIAssistantPage() {
-  const { messages, activeConversationId, sendMessage, isGenerating } = useChatStore();
+  const {
+    messages,
+    activeConversationId,
+    sendMessage,
+    stopGeneration,
+    isGenerating,
+    loadConversations,
+  } = useChatStore();
   const [selectedPromptText, setSelectedPromptText] = React.useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
 
   const currentMessages = activeConversationId ? messages[activeConversationId] || [] : [];
 
@@ -41,6 +52,7 @@ export default function AIAssistantPage() {
         {/* Bottom Prompt Composer */}
         <PromptComposer
           onSend={handleSend}
+          onStop={stopGeneration}
           isGenerating={isGenerating}
           externalPrompt={selectedPromptText}
         />

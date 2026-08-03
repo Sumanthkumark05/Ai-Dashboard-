@@ -6,7 +6,7 @@ export type SortField = "name" | "modifiedDate" | "size" | "type";
 
 export type SortOrder = "asc" | "desc";
 
-export type FileTypeFilter = "all" | "folder" | "document" | "pdf" | "image" | "video" | "code";
+export type FileTypeFilter = "all" | "document" | "pdf" | "image" | "video" | "code";
 
 export interface FileOwner {
   name: string;

@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
 import { CalendarEvent } from "../types";
-import { useCalendarStore } from "@/stores/calendar-store";
+import { useCalendarStore } from "@/features/calendar/store/calendar-store";
 import { cn } from "@/lib/utils";
 
 export interface EventCardProps {
@@ -30,7 +30,7 @@ export function EventCard({ event, compact = false }: EventCardProps) {
         "rounded-md p-1.5 text-xs transition-all cursor-pointer select-none border border-border/60 shadow-2xs group",
         isSelected ? "ring-1 ring-primary" : "bg-card hover:border-primary/40"
       )}
-      style={{ borderLeftColor: event.color, borderLeftWidth: "3px" }}
+      style={{ borderLeftColor: event.color || "#3b82f6", borderLeftWidth: "3px" }}
     >
       <div className="flex items-center justify-between gap-1">
         <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
@@ -41,7 +41,7 @@ export function EventCard({ event, compact = false }: EventCardProps) {
       {!compact && (
         <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
           <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="font-mono">{event.startTime}</span>
+          <span className="font-mono">{event.time || event.startTime || "09:00 AM"}</span>
         </div>
       )}
     </motion.div>

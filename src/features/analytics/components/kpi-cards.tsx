@@ -2,33 +2,97 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Users, UserCheck, Bot, FileText, HardDrive, BookOpen, ArrowUpRight, LucideIcon } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line } from "recharts";
-import { kpiMetricsData } from "../mock/analytics-mock-data";
-import { KPIMetric } from "../types";
+import { FolderOpen, FileText, Database, HardDrive, Cpu, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const iconMap: Record<string, LucideIcon> = {
-  Users,
-  UserCheck,
-  Bot,
-  FileText,
-  HardDrive,
-  BookOpen,
-};
+import { useAnalyticsStore } from "@/stores/analytics-store";
+import { useDashboardStore } from "@/stores/dashboard-store";
 
 export function KPICards() {
-  const [mounted, setMounted] = React.useState(false);
+  const { telemetry, isLoading } = useAnalyticsStore();
+  const { summary } = useDashboardStore();
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const ws = telemetry?.workspaces;
+  const files = telemetry?.files;
+  const docs = telemetry?.documents;
+  const ds = telemetry?.datasets;
+  const storage = telemetry?.storage;
+  const jobs = telemetry?.jobs;
+
+  // Storage computation safely formatted
+  const storageUsed = storage?.used_formatted ?? summary?.storageUsedFormatted ?? "0 B";
+  const storageRemaining = storage?.remaining_formatted ?? summary?.storageRemainingFormatted ?? "10 GB";
+  const storageCapacity = storage?.capacity_formatted ?? summary?.capacityFormatted ?? "10 GB";
+  const storagePercent = storage?.percentage_used ?? 0;
+  const avgFileSize = storage?.avg_file_size_formatted ?? "0 B";
+
+  // Jobs display formatting
+  let jobsDisplay = "No background jobs running.";
+  let jobsSubtext = "Queue empty";
+  if (jobs && jobs.total > 0) {
+    jobsDisplay = `${jobs.running} Running / ${jobs.completed} Done`;
+    jobsSubtext = jobs.failed > 0 ? `${jobs.failed} Failed` : "All systems operational";
+  } else if (jobs?.message) {
+    jobsDisplay = jobs.message;
+  }
+
+  const kpis = [
+    {
+      id: "ws",
+      title: "Workspaces Overview",
+      value: String(ws?.total ?? summary?.workspaces ?? 0),
+      subtitle: `${ws?.active ?? 0} Active • ${ws?.archived ?? 0} Archived`,
+      badge: `${ws?.growth_percentage ?? 0}% Growth`,
+      icon: FolderOpen,
+    },
+    {
+      id: "files",
+      title: "Files Uploaded",
+      value: String(files?.total ?? summary?.files ?? 0),
+      subtitle: `Today: ${files?.today ?? 0} • Week: ${files?.this_week ?? 0} • Month: ${files?.this_month ?? 0}`,
+      badge: "Live Telemetry",
+      icon: FileText,
+    },
+    {
+      id: "docs",
+      title: "Knowledge Documents",
+      value: String(docs?.total ?? summary?.documents ?? 0),
+      subtitle: `Indexed: ${docs?.indexed ?? 0} • Pending: ${docs?.pending ?? 0} • Failed: ${docs?.failed ?? 0}`,
+      badge: "Synced",
+      icon: FileText,
+    },
+    {
+      id: "ds",
+      title: "Datasets & Sets",
+      value: String(ds?.total ?? summary?.datasets ?? 0),
+      subtitle: `Files: ${ds?.files_count ?? 0} • Storage: ${ds?.storage_formatted ?? "0 B"}`,
+      badge: `${ds?.indexed ?? 0} Ready`,
+      icon: Database,
+    },
+    {
+      id: "storage",
+      title: "Storage Utilization",
+      value: storageUsed,
+      subtitle: (files?.total ?? 0) > 0 
+        ? `Rem: ${storageRemaining} of ${storageCapacity} (${storagePercent}%) • Avg: ${avgFileSize}`
+        : `Capacity: ${storageCapacity} • 0% Used`,
+      badge: (files?.total ?? 0) > 0 ? `${storagePercent}% Used` : "Empty",
+      icon: HardDrive,
+    },
+    {
+      id: "jobs",
+      title: "Background Jobs",
+      value: jobsDisplay,
+      subtitle: jobsSubtext,
+      badge: (jobs?.running ?? 0) > 0 ? `${jobs?.running} Active` : "Idle",
+      icon: Cpu,
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      {kpiMetricsData.map((kpi: KPIMetric, index: number) => {
-        const IconComponent = iconMap[kpi.iconName] || Users;
+      {kpis.map((kpi, index) => {
+        const IconComponent = kpi.icon;
 
         return (
           <motion.div
@@ -47,32 +111,22 @@ export function KPICards() {
                   </div>
                 </div>
 
-                <div className="flex items-baseline justify-between gap-2 mb-2">
-                  <span className="text-2xl font-extrabold tracking-tight text-foreground">{kpi.value}</span>
-                  <Badge variant="success" size="sm" className="gap-0.5 text-[10px]">
+                <div className="mb-2">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground block truncate">
+                    {isLoading && !telemetry ? "..." : kpi.value}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-border/50">
+                  <span className="text-muted-foreground text-[11px] truncate mr-1">
+                    {kpi.subtitle}
+                  </span>
+                  <Badge variant="success" size="sm" className="gap-0.5 text-[10px] shrink-0">
                     <ArrowUpRight className="h-3 w-3" />
-                    <span>{kpi.change}</span>
+                    <span>{kpi.badge}</span>
                   </Badge>
                 </div>
               </div>
-
-              {/* Mini Sparkline Chart */}
-              {mounted && (
-                <div className="h-10 w-full pt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={kpi.sparklineData}>
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
             </Card>
           </motion.div>
         );

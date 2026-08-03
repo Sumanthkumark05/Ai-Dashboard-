@@ -29,10 +29,10 @@ const statusVariants = cva("absolute bottom-0 right-0 rounded-full ring-2 ring-b
       busy: "bg-danger",
     },
     size: {
-      xs: "h-1.5 w-1.5",
-      sm: "h-2 w-2",
-      md: "h-2.5 w-2.5",
-      lg: "h-3 w-3",
+      xs: "h-2 w-2",
+      sm: "h-2.5 w-2.5",
+      md: "h-3 w-3",
+      lg: "h-3.5 w-3.5",
       xl: "h-4 w-4",
     },
   },
@@ -52,7 +52,7 @@ export const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   AvatarProps
 >(({ className, size = "md", status, children, ...props }, ref) => (
-  <div className="relative inline-block">
+  <div className="relative inline-block shrink-0">
     <AvatarPrimitive.Root
       ref={ref}
       className={cn(avatarVariants({ size }), className)}

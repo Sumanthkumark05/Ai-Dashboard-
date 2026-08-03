@@ -20,7 +20,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground shrink-0">
+      <div className="relative flex h-10 w-10 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground shrink-0">
         <Sun className="h-4 w-4" />
       </div>
     );
@@ -32,7 +32,7 @@ export function ThemeToggle() {
         <button
           type="button"
           aria-label="Toggle display theme"
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+          className="relative flex h-10 w-10 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 shrink-0" />
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 shrink-0" />

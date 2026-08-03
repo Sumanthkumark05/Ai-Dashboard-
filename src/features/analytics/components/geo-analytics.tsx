@@ -1,22 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { geoLocationsData } from "../mock/analytics-mock-data";
-import { GeoLocation } from "../types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/feedback/progress";
+
+const geoLocationsData = [
+  { code: "US", country: "United States", percentage: 55 },
+  { code: "EU", country: "European Union", percentage: 25 },
+  { code: "IN", country: "India", percentage: 20 },
+];
 
 export function GeoAnalytics() {
   return (
     <Card className="p-5 h-full">
       <div className="mb-4">
         <h4 className="text-sm font-semibold text-foreground">Geographic Active Distribution</h4>
-        <p className="text-xs text-muted-foreground">Top user regions by country volume</p>
+        <p className="text-xs text-muted-foreground">Top traffic regions by country volume</p>
       </div>
 
       <div className="space-y-3.5">
-        {geoLocationsData.map((item: GeoLocation, index: number) => (
+        {geoLocationsData.map((item, index) => (
           <div key={index} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
@@ -26,10 +30,10 @@ export function GeoAnalytics() {
                 <span className="font-semibold text-foreground">{item.country}</span>
               </div>
               <span className="text-muted-foreground font-mono">
-                {item.users.toLocaleString()} users ({item.percentage}%)
+                {item.percentage}%
               </span>
             </div>
-            <Progress value={item.percentage * 2} className="h-1.5" />
+            <Progress value={item.percentage} className="h-1.5" />
           </div>
         ))}
       </div>

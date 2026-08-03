@@ -3,14 +3,39 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
-import { suggestedPrompts } from "../mock/chat-mock-data";
-import { SuggestedPrompt } from "../types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export interface SuggestedPromptsProps {
   onSelectPrompt: (promptText: string) => void;
 }
+
+const suggestedPrompts = [
+  {
+    id: "sp_1",
+    title: "Summarise document",
+    prompt: "Provide a 3-bullet executive summary of our latest architecture specification.",
+    category: "Writing",
+  },
+  {
+    id: "sp_2",
+    title: "Generate meeting notes",
+    prompt: "Create an action-oriented meeting summary with owner assignments and deadlines.",
+    category: "Productivity",
+  },
+  {
+    id: "sp_3",
+    title: "Explain React Server Components",
+    prompt: "Explain how React Server Components work in Next.js 15 App Router with code examples.",
+    category: "Coding",
+  },
+  {
+    id: "sp_4",
+    title: "Create a project roadmap",
+    prompt: "Draft a 4-phase technical roadmap for deploying autonomous AI agents to production.",
+    category: "Analysis",
+  },
+];
 
 export function SuggestedPrompts({ onSelectPrompt }: SuggestedPromptsProps) {
   return (
@@ -21,7 +46,7 @@ export function SuggestedPrompts({ onSelectPrompt }: SuggestedPromptsProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {suggestedPrompts.map((item: SuggestedPrompt, index: number) => (
+        {suggestedPrompts.map((item, index: number) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 8 }}

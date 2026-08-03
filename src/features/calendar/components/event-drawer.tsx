@@ -2,18 +2,28 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Clock, MapPin, Bell, Trash2 } from "lucide-react";
-import { useCalendarStore } from "@/stores/calendar-store";
+import { X, Calendar, Clock, MapPin, Bell, Trash2, CheckCircle2, Video, Building2, User } from "lucide-react";
+import { useCalendarStore } from "@/features/calendar/store/calendar-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/display/avatar";
+import { Avatar, AvatarFallback } from "@/components/display/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/feedback/toast";
 
 export function EventDrawer() {
-  const { selectedEvent, isDrawerOpen, closeDrawer, deleteEvent } = useCalendarStore();
+  const { selectedEvent, isDrawerOpen, closeDrawer, deleteEvent, markEventStatus } = useCalendarStore();
 
   if (!selectedEvent) return null;
+
+  const isCompleted = selectedEvent.status === "Completed";
+
+  const handleToggleComplete = async () => {
+    const nextStatus = isCompleted ? "Scheduled" : "Completed";
+    await markEventStatus(selectedEvent.id, nextStatus);
+    toast.success(nextStatus === "Completed" ? "Event Completed!" : "Event Rescheduled", {
+      description: `${selectedEvent.title} status marked as ${nextStatus}.`,
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -40,10 +50,18 @@ export function EventDrawer() {
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="uppercase text-[10px]">
-                    {selectedEvent.category}
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: selectedEvent.color || "#3b82f6" }}
+                  />
+                  <Badge variant="outline" className="uppercase text-[10px] font-semibold">
+                    {selectedEvent.event_type || selectedEvent.category}
                   </Badge>
-                  <Badge variant="success" size="sm" className="text-[10px]">
+                  <Badge
+                    variant={isCompleted ? "success" : selectedEvent.status === "Upcoming" ? "info" : "secondary"}
+                    size="sm"
+                    className="text-[10px]"
+                  >
                     {selectedEvent.status}
                   </Badge>
                 </div>
@@ -58,27 +76,57 @@ export function EventDrawer() {
                 </Button>
               </div>
 
-              {/* Event Title & Date Header */}
+              {/* Event Title & Description */}
               <div className="mb-6">
                 <h3 className="text-lg font-bold text-foreground mb-2">{selectedEvent.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{selectedEvent.description}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {selectedEvent.description || "No description provided."}
+                </p>
               </div>
 
               <Separator className="my-4" />
 
               {/* Event Metadata List */}
               <div className="space-y-4 text-xs">
+                {selectedEvent.client_name && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <User className="h-4 w-4 text-primary shrink-0" />
+                    <span>Client: <strong className="text-foreground">{selectedEvent.client_name}</strong></span>
+                  </div>
+                )}
+
+                {selectedEvent.workspaceName && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <span>Workspace: <strong className="text-foreground">{selectedEvent.workspaceName}</strong></span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <Calendar className="h-4 w-4 text-primary shrink-0" />
-                  <span className="text-foreground font-semibold font-mono">{selectedEvent.date}</span>
+                  <span className="text-foreground font-semibold font-mono">{selectedEvent.date || selectedEvent.start_date}</span>
                 </div>
 
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <Clock className="h-4 w-4 text-primary shrink-0" />
                   <span className="text-foreground font-semibold font-mono">
-                    {selectedEvent.startTime} - {selectedEvent.endTime}
+                    {selectedEvent.time || selectedEvent.startTime} {selectedEvent.endTime ? `- ${selectedEvent.endTime}` : ""}
                   </span>
                 </div>
+
+                {selectedEvent.meeting_link && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Video className="h-4 w-4 text-primary shrink-0" />
+                    <a
+                      href={selectedEvent.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary font-medium hover:underline truncate max-w-[280px]"
+                    >
+                      {selectedEvent.meeting_link}
+                    </a>
+                  </div>
+                )}
 
                 {selectedEvent.location && (
                   <div className="flex items-center gap-3 text-muted-foreground">
@@ -87,30 +135,20 @@ export function EventDrawer() {
                   </div>
                 )}
 
-                {selectedEvent.reminder && (
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Bell className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-foreground font-medium">{selectedEvent.reminder}</span>
+                {/* Assigned Members */}
+                <div className="pt-2">
+                  <span className="font-semibold text-foreground block mb-2">Assigned Team Members</span>
+                  <div className="flex flex-wrap gap-2">
+                    {["Rahul", "Krishna", "Sumanth"].map((name, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 p-1.5 rounded-lg border border-border bg-muted/20 text-xs">
+                        <Avatar size="xs">
+                          <AvatarFallback>{name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-foreground">{name}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* Participants */}
-                {selectedEvent.participants && selectedEvent.participants.length > 0 && (
-                  <div className="pt-2">
-                    <span className="font-semibold text-foreground block mb-2">Participants</span>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedEvent.participants.map((p, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 p-1.5 rounded-lg border border-border bg-muted/20 text-xs">
-                          <Avatar size="xs">
-                            <AvatarImage src={p.avatarUrl} alt={p.name} />
-                            <AvatarFallback>{p.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-foreground">{p.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {/* Notes */}
                 {selectedEvent.notes && (
@@ -124,9 +162,17 @@ export function EventDrawer() {
               </div>
             </div>
 
-            {/* Footer Delete Action */}
-            <div className="pt-6 border-t border-border flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Created by {selectedEvent.createdBy}</span>
+            {/* Footer Action Buttons */}
+            <div className="pt-6 border-t border-border flex items-center justify-between gap-2">
+              <Button
+                variant={isCompleted ? "outline" : "primary"}
+                size="sm"
+                leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                onClick={handleToggleComplete}
+              >
+                {isCompleted ? "Mark Incomplete" : "Mark Complete"}
+              </Button>
+
               <Button
                 variant="destructive"
                 size="sm"
@@ -136,7 +182,7 @@ export function EventDrawer() {
                   toast.info("Event deleted");
                 }}
               >
-                Delete Event
+                Delete
               </Button>
             </div>
           </motion.div>

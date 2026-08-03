@@ -33,6 +33,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_num_col_size=64,  # support long revision IDs
     )
 
     with context.begin_transaction():
@@ -48,6 +49,7 @@ def do_run_migrations(connection) -> None:  # type: ignore[no-untyped-def]
         target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True,
+        version_num_col_size=64,  # support long revision IDs
     )
 
     with context.begin_transaction():

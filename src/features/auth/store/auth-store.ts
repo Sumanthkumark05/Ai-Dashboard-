@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { User, LoginCredentials, RegisterCredentials } from "../types";
 import { authService } from "../services/auth-service";
+import { tokenStorage } from "@/lib/api-client";
 
 interface AuthState {
   user: User | null;
@@ -12,8 +13,9 @@ interface AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   forgotPassword: (email: string) => Promise<boolean>;
-  resetPassword: (password: string) => Promise<boolean>;
+  resetPassword: (password: string, token?: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -29,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await authService.login(credentials);
+          // Token is stored in tokenStorage by the auth service
           set({
             user: response.user,
             isAuthenticated: true,
@@ -36,11 +39,11 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to log in. Please try again.";
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to log in. Please check your credentials.";
+          set({ isLoading: false, error: errorMessage });
           throw err;
         }
       },
@@ -56,11 +59,11 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to register account.";
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to register account. Please try again.";
+          set({ isLoading: false, error: errorMessage });
           throw err;
         }
       },
@@ -72,35 +75,46 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false, error: null });
           return true;
         } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to send reset email.";
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to send reset email. Please try again.";
+          set({ isLoading: false, error: errorMessage });
           return false;
         }
       },
 
-      resetPassword: async (password) => {
+      resetPassword: async (password, token) => {
         set({ isLoading: true, error: null });
         try {
-          await authService.resetPassword(password);
+          await authService.resetPassword(password, token);
           set({ isLoading: false, error: null });
           return true;
         } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to reset password.";
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to reset password. Please try again.";
+          set({ isLoading: false, error: errorMessage });
           return false;
         }
       },
 
       logout: async () => {
         set({ isLoading: true });
-        await authService.logout();
+        await authService.logout(); // clears tokenStorage internally
         set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      },
+
+      /** Re-fetch the authenticated user from /auth/me */
+      refreshUser: async () => {
+        const user = await authService.me();
+        if (user) {
+          set({ user, isAuthenticated: true });
+        } else {
+          tokenStorage.clear();
+          set({ user: null, isAuthenticated: false });
+        }
       },
 
       clearError: () => set({ error: null }),
@@ -108,7 +122,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "neurodesk_auth_session",
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

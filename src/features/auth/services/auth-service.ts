@@ -1,88 +1,174 @@
+/**
+ * auth-service.ts
+ *
+ * Real HTTP auth service — connects to the FastAPI backend via the
+ * central api-client.
+ */
+
+import { apiClient, tokenStorage } from "@/lib/api-client";
 import {
   AuthResponse,
   LoginCredentials,
+  MeResponse,
   RegisterCredentials,
+  TokenResponse,
   User,
 } from "../types";
 
-const MOCK_USER: User = {
-  id: "usr_neuro_109283",
-  name: "Alex Vance",
-  email: "alex@neurodesk.ai",
-  avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-  createdAt: new Date().toISOString(),
-};
+interface RegisterBackendResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: MeResponse;
+    tokens: TokenResponse;
+  };
+}
 
-const delay = (ms: number = 1000) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+// ── Helper: parse full name into first and last name ───────────────────────
+
+function parseName(fullName: string): { firstName: string; lastName?: string } {
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = parts[0] || "User";
+  const lastName = parts.slice(1).join(" ") || undefined;
+  return { firstName, lastName };
+}
+
+// ── Helper: generate clean unique username from email & name ────────────────
+
+function generateUsername(email: string, name: string): string {
+  const emailPrefix = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
+  if (emailPrefix.length >= 3) return emailPrefix;
+  const nameSlug = name.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  if (nameSlug.length >= 3) return nameSlug;
+  return `user_${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+// ── Helper: map backend UserResponse → frontend User ──────────────────────
+
+function mapMeToUser(me: MeResponse): User {
+  const parts = [me.first_name, me.last_name].filter(Boolean);
+  const fullName = parts.length > 0 ? parts.join(" ") : me.username;
+  return {
+    id: String(me.id),
+    name: fullName,
+    email: me.email,
+    role: me.role,
+    is_active: me.is_active,
+    is_verified: me.is_verified,
+    avatarUrl: me.avatar_url ?? undefined,
+    createdAt: me.created_at,
+  };
+}
+
+// ── Service ────────────────────────────────────────────────────────────────
 
 export const authService = {
+  /**
+   * Login via JSON payload.
+   * POST /auth/login with Content-Type: application/json and { email, password }.
+   */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await delay(1000);
-
-    if (credentials.email === "error@neurodesk.ai") {
-      throw new Error("Invalid email or password. Please check your credentials.");
-    }
-
-    const user: User = {
-      ...MOCK_USER,
+    const tokenResp = await apiClient.post<TokenResponse>("/auth/login", {
       email: credentials.email,
-      name: credentials.email.split("@")[0].replace(".", " "),
-    };
+      password: credentials.password,
+    });
 
-    return {
-      user,
-      token: `mock_jwt_token_${Date.now()}`,
-    };
+    // Store the JWT so subsequent requests attach it automatically
+    tokenStorage.set(tokenResp.access_token);
+
+    // Fetch the full user profile
+    const me = await apiClient.get<MeResponse>("/auth/me");
+    const user = mapMeToUser(me);
+
+    return { user, token: tokenResp.access_token };
   },
 
+  /**
+   * Register a new account.
+   * POST /auth/register with JSON body matching backend RegisterRequest schema.
+   */
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    await delay(1200);
+    const { firstName, lastName } = parseName(credentials.name);
+    const username = generateUsername(credentials.email, credentials.name);
 
-    if (credentials.email === "existing@neurodesk.ai") {
-      throw new Error("An account with this email address already exists.");
+    const resp = await apiClient.post<RegisterBackendResponse>("/auth/register", {
+      email: credentials.email.toLowerCase().trim(),
+      username,
+      password: credentials.password,
+      first_name: firstName,
+      last_name: lastName,
+      terms_accepted: true,
+    });
+
+    const accessToken = resp.data?.tokens?.access_token;
+    if (!accessToken) {
+      throw new Error("Registration succeeded but access token was missing from backend response.");
     }
 
-    const user: User = {
-      id: `usr_${Date.now()}`,
-      name: credentials.name,
-      email: credentials.email,
-      createdAt: new Date().toISOString(),
-    };
+    // Save JWT token for authenticated requests
+    tokenStorage.set(accessToken);
 
-    return {
-      user,
-      token: `mock_jwt_token_${Date.now()}`,
-    };
+    // Map user directly from registration response data
+    const user = mapMeToUser(resp.data.user);
+
+    return { user, token: accessToken };
   },
 
-  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
-    await delay(1000);
-
-    if (email === "notfound@neurodesk.ai") {
-      throw new Error("No account registered with this email address.");
+  /**
+   * Request a password-reset email.
+   */
+  async forgotPassword(
+    email: string
+  ): Promise<{ success: boolean; message: string }> {
+    interface ForgotResp {
+      message: string;
     }
-
-    return {
-      success: true,
-      message: "Password reset link has been dispatched to your inbox.",
-    };
+    const resp = await apiClient.post<ForgotResp>("/auth/forgot-password", {
+      email,
+    });
+    return { success: true, message: resp.message };
   },
 
-  async resetPassword(password: string): Promise<{ success: boolean; message: string }> {
-    await delay(1000);
-
-    if (!password) {
-      throw new Error("Password is required for reset.");
+  /**
+   * Reset password using a token (obtained from the reset email link).
+   */
+  async resetPassword(
+    password: string,
+    token?: string
+  ): Promise<{ success: boolean; message: string }> {
+    interface ResetResp {
+      message: string;
     }
-
-    return {
-      success: true,
-      message: "Your password has been reset successfully.",
-    };
+    const resp = await apiClient.post<ResetResp>("/auth/reset-password", {
+      new_password: password,
+      token,
+    });
+    return { success: true, message: resp.message };
   },
 
+  /**
+   * Fetch the currently authenticated user's profile.
+   * Returns null if not authenticated.
+   */
+  async me(): Promise<User | null> {
+    try {
+      const me = await apiClient.get<MeResponse>("/auth/me");
+      return mapMeToUser(me);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Logout – clears the local token. Backend token invalidation is optional.
+   */
   async logout(): Promise<void> {
-    await delay(500);
+    try {
+      await apiClient.post("/auth/logout");
+    } catch {
+      // Always clear local session even if backend call fails
+    } finally {
+      tokenStorage.clear();
+    }
   },
 };

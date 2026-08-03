@@ -1,32 +1,58 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import * as React from "react";
+import { useWorkspaceContextStore } from "@/stores/workspace-context-store";
+import { useDocumentStore } from "@/stores/document-store";
+import { DocumentHeader } from "@/features/documents/components/document-header";
+import { DocumentToolbar } from "@/features/documents/components/document-toolbar";
+import { DocumentGridView } from "@/features/documents/components/document-grid-view";
+import { DocumentListView } from "@/features/documents/components/document-list-view";
+import { DocumentEmptyState } from "@/features/documents/components/document-empty-state";
+import { DocumentSkeletonLoader } from "@/features/documents/components/document-skeleton-loader";
+import { DocumentUploadModal } from "@/features/documents/components/document-upload-modal";
+import { DocumentStorageSummary } from "@/features/documents/components/document-storage-summary";
 
 export default function DocumentsPage() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" /> Documents Library
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Enterprise knowledge base, vector embeddings, and indexed documentation.
-          </p>
-        </div>
-        <Button variant="primary" size="sm">
-          <Plus className="h-4 w-4 mr-1.5" /> Upload Document
-        </Button>
-      </div>
+  const { currentWorkspace } = useWorkspaceContextStore();
+  const {
+    documents,
+    isLoading,
+    searchQuery,
+    selectedCategory,
+    selectedStatus,
+    fetchDocuments,
+  } = useDocumentStore();
 
-      <div className="p-8 border border-dashed border-border rounded-xl text-center space-y-3 bg-card">
-        <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
-        <h3 className="text-base font-semibold text-foreground">Knowledge Repository</h3>
-        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-          Upload PDF, Markdown, or DOCX files to automatically chunk and embed them for your AI agents.
-        </p>
-      </div>
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+
+  React.useEffect(() => {
+    fetchDocuments(currentWorkspace?.id);
+  }, [fetchDocuments, currentWorkspace?.id, searchQuery, selectedCategory, selectedStatus]);
+
+  return (
+    <div className="space-y-5 pb-12 select-none">
+      {/* Page Header */}
+      <DocumentHeader />
+
+      {/* Workspace Storage Summary Capacity Widget */}
+      <DocumentStorageSummary />
+
+      {/* Toolbar Controls: Search, Category Filter, Status Filter, View Toggle */}
+      <DocumentToolbar viewMode={viewMode} setViewMode={setViewMode} />
+
+      {/* Document Content List / Grid Area */}
+      {isLoading ? (
+        <DocumentSkeletonLoader />
+      ) : documents.length === 0 ? (
+        <DocumentEmptyState />
+      ) : viewMode === "grid" ? (
+        <DocumentGridView documents={documents} />
+      ) : (
+        <DocumentListView documents={documents} />
+      )}
+
+      {/* Upload Document Modal Dialog */}
+      <DocumentUploadModal />
     </div>
   );
 }

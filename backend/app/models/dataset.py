@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (
     DatasetProcessingStatus,
@@ -24,6 +24,9 @@ class Dataset(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     )
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         GUID(), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    folder_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        GUID(), ForeignKey("folders.id", ondelete="SET NULL"), index=True, nullable=True
     )
     uploaded_by: Mapped[uuid.UUID] = mapped_column(
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
@@ -72,3 +75,6 @@ class Dataset(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
 
     is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    # Relationships
+    folder = relationship("Folder", backref="datasets", lazy="selectin")

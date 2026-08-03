@@ -1,27 +1,41 @@
+from typing import Dict, Type
+from loguru import logger
+
 from app.core.config import settings
+from app.services.storage.azure_storage import AzureStorage
+from app.services.storage.cloudinary_storage import CloudinaryStorage
+from app.services.storage.google_storage import GoogleStorage
 from app.services.storage.local_storage import LocalStorage
+from app.services.storage.s3_storage import S3Storage
 from app.services.storage.storage_interface import StorageInterface
 
 
 class StorageFactory:
     """
-    Factory creating storage provider instances based on application configuration.
+    Factory creating instances of StorageInterface based on application configuration.
     """
+
+    _providers: Dict[str, Type[StorageInterface]] = {
+        "local": LocalStorage,
+        "s3": S3Storage,
+        "cloudinary": CloudinaryStorage,
+        "google": GoogleStorage,
+        "gcs": GoogleStorage,
+        "azure": AzureStorage,
+    }
 
     _instance: StorageInterface = None
 
     @classmethod
     def get_storage_provider(cls) -> StorageInterface:
         """
-        Returns singleton configured storage provider instance.
+        Returns configured storage provider singleton instance.
         """
         if cls._instance is None:
-            provider = getattr(settings, "STORAGE_PROVIDER", "local").lower()
-            if provider == "local":
-                base_dir = getattr(settings, "STORAGE_LOCAL_DIR", "storage")
-                cls._instance = LocalStorage(base_dir=base_dir)
-            else:
-                # Fallback to LocalStorage until S3/Supabase provider modules are attached
-                cls._instance = LocalStorage(base_dir="storage")
+            provider_name = getattr(settings, "STORAGE_PROVIDER", "local").lower().strip()
+            provider_cls = cls._providers.get(provider_name, LocalStorage)
+
+            logger.info(f"Initializing Storage Provider: '{provider_name}' ({provider_cls.__name__})")
+            cls._instance = provider_cls()
 
         return cls._instance

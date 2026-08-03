@@ -171,3 +171,50 @@ async def test_document_favorite_and_versions(doc_client: AsyncClient) -> None:
     versions = vers_resp.json()
     assert len(versions) == 1
     assert versions[0]["version_number"] == 1
+
+
+@pytest.mark.asyncio
+async def test_multipart_document_file_upload_and_download(doc_client: AsyncClient) -> None:
+    """
+    Test multipart document file upload and download endpoints.
+    """
+    reg_resp = await doc_client.post(
+        "/api/v1/auth/register",
+        json={"email": "docupload@neurodesk.ai", "username": "docupload", "password": "Password123!"},
+    )
+    token = reg_resp.json()["data"]["tokens"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    org_resp = await doc_client.post(
+        "/api/v1/organizations", json={"name": "Upload Doc Org"}, headers=headers
+    )
+    headers["X-Organization-ID"] = org_resp.json()["id"]
+
+    ws_resp = await doc_client.post(
+        "/api/v1/workspaces", json={"name": "Upload Doc WS"}, headers=headers
+    )
+    headers["X-Workspace-ID"] = ws_resp.json()["id"]
+
+    # Upload PDF Document file
+    file_content = b"%PDF-1.4 %Knowledge Repository Sample Technical Document..."
+    file_payload = ("technical_specs.pdf", file_content, "application/pdf")
+    
+    up_resp = await doc_client.post(
+        "/api/v1/documents/upload",
+        files={"file": file_payload},
+        data={"title": "Technical Specification PDF", "category": "Technical"},
+        headers=headers,
+    )
+    assert up_resp.status_code == 201
+    doc_data = up_resp.json()
+    assert doc_data["title"] == "Technical Specification PDF"
+    assert doc_data["file_extension"] == "pdf"
+    assert doc_data["status"] == "ready"
+    assert doc_data["processing_status"] == "completed"
+    doc_id = doc_data["id"]
+
+    # Download Document File
+    dl_resp = await doc_client.get(f"/api/v1/documents/{doc_id}/download", headers=headers)
+    assert dl_resp.status_code == 200
+    assert dl_resp.content == file_content
+

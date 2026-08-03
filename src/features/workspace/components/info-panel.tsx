@@ -3,17 +3,32 @@
 import * as React from "react";
 import { Info, Calendar, Clock, Tag, BookOpen, Activity, X } from "lucide-react";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { initialWorkspaceActivities } from "../mock/workspace-mock-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/display/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { dashboardApi, ActivityItem } from "@/services/dashboard-api";
 
 export function InfoPanel() {
   const { pages, selectedPageId, isInfoPanelOpen, toggleInfoPanel } = useWorkspaceStore();
+  const [activities, setActivities] = React.useState<ActivityItem[]>([]);
 
   const selectedPage = pages.find((p) => p.id === selectedPageId);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    dashboardApi.getActivity(3, 0)
+      .then((res) => {
+        if (!cancelled) setActivities(res.items || []);
+      })
+      .catch(() => {
+        if (!cancelled) setActivities([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!isInfoPanelOpen || !selectedPage) return null;
 
@@ -112,14 +127,20 @@ export function InfoPanel() {
           </span>
 
           <div className="space-y-2 text-[11px]">
-            {initialWorkspaceActivities.map((act) => (
-              <div key={act.id} className="p-2 rounded-md border border-border bg-muted/10 space-y-0.5">
-                <p className="text-foreground">
-                  <span className="font-semibold">{act.user}</span> {act.action}
-                </p>
-                <span className="text-[10px] text-muted-foreground block font-mono">{act.timestamp}</span>
-              </div>
-            ))}
+            {activities.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground">No recent activity.</p>
+            ) : (
+              activities.map((act) => (
+                <div key={act.id} className="p-2 rounded-md border border-border bg-muted/10 space-y-0.5">
+                  <p className="text-foreground font-semibold">
+                    {act.action} {act.entity_type}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground block font-mono">
+                    {new Date(act.created_at).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

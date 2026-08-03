@@ -48,17 +48,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className={cn("flex gap-3 sm:gap-4 max-w-4xl mx-auto py-4 group", isUser ? "flex-row-reverse" : "flex-row")}
+      transition={{ duration: 0.2 }}
+      className={cn("flex gap-3 sm:gap-4 max-w-4xl mx-auto py-3 group", isUser ? "flex-row-reverse" : "flex-row")}
     >
       {/* Avatar */}
       <Avatar size="sm" className="shrink-0 mt-0.5 select-none">
         {isUser ? (
           <>
             <AvatarImage src={user?.avatarUrl} alt={user?.name || "User"} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">{userInitials}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-primary-foreground text-[11px] font-bold">{userInitials}</AvatarFallback>
           </>
         ) : (
           <AvatarFallback className="bg-primary/10 border border-primary/20 text-primary">
@@ -67,7 +67,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         )}
       </Avatar>
 
-      {/* Message Card Container */}
+      {/* Message Content & Metadata Container */}
       <div className={cn("flex flex-col min-w-0 max-w-[85%] sm:max-w-[88%]", isUser ? "items-end" : "items-start")}>
         {/* Header Metadata */}
         <div className="flex items-center gap-2 mb-1 text-[11px] text-muted-foreground select-none">
@@ -79,7 +79,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {/* Content Bubble */}
         <div
           className={cn(
-            "rounded-xl px-4 py-3 shadow-xs transition-all text-sm leading-relaxed overflow-hidden",
+            "rounded-2xl px-4 py-3 shadow-xs transition-all text-sm leading-relaxed overflow-hidden",
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-xs"
               : "bg-card border border-border text-foreground rounded-tl-xs"
@@ -96,18 +96,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           ) : null}
         </div>
 
-        {/* Message Action Bar (AI Messages Only) */}
+        {/* Action Bar for Assistant Messages */}
         {!isUser && !message.isStreaming && message.content && (
-          <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+          <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity select-none">
             <TooltipProvider delayDuration={200}>
               {/* Copy */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="icon-xs"
                     onClick={handleCopy}
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground"
                     aria-label="Copy response"
                   >
                     {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -121,9 +121,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="icon-xs"
                     onClick={() => sendMessage("Can you regenerate and expand on your previous answer?")}
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground"
                     aria-label="Regenerate response"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
@@ -137,10 +137,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="icon-xs"
                     onClick={handleLike}
                     className={cn(
-                      "h-6 w-6 p-0 text-muted-foreground hover:text-foreground",
+                      "text-muted-foreground hover:text-foreground",
                       message.feedback === "like" && "text-success"
                     )}
                     aria-label="Good response"
@@ -156,10 +156,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="icon-xs"
                     onClick={handleDislike}
                     className={cn(
-                      "h-6 w-6 p-0 text-muted-foreground hover:text-foreground",
+                      "text-muted-foreground hover:text-foreground",
                       message.feedback === "dislike" && "text-danger"
                     )}
                     aria-label="Poor response"

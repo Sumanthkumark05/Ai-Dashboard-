@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.dependency import get_db
@@ -12,6 +12,7 @@ from app.schemas.dataset import (
     DatasetListResponse,
     DatasetResponse,
     DatasetStatisticsResponse,
+    DatasetUploadResponse,
     DatasetVersionResponse,
     UpdateDatasetRequest,
 )
@@ -21,6 +22,40 @@ from app.services.dataset_service import DatasetService
 from app.services.dataset_statistics_service import DatasetStatisticsService
 
 router = APIRouter(prefix="/datasets", tags=["Dataset Management"])
+
+
+@router.post(
+    "/upload",
+    response_model=DatasetUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload Dataset File",
+    description="Uploads a physical dataset file via multipart form-data, stores it, and creates PostgreSQL record.",
+)
+async def upload_dataset(
+    file: UploadFile = File(..., description="Dataset multipart file payload"),
+    description: Optional[str] = Form(default=None, description="Optional dataset description"),
+    tags: Optional[str] = Form(default=None, description="Comma-separated dataset tags"),
+    current_ws: Workspace = Depends(get_current_workspace),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DatasetUploadResponse:
+    dataset = await DatasetService.upload_dataset_file(
+        workspace=current_ws,
+        file=file,
+        uploader=current_user,
+        db=db,
+        description=description,
+        tags_str=tags,
+    )
+    repo = DatasetRepository(db)
+    tags_list = await repo.get_dataset_tags(dataset.id)
+    resp_model = DatasetResponse.model_validate(dataset)
+    resp_model.tags = tags_list
+    return DatasetUploadResponse(
+        success=True,
+        message="Dataset uploaded successfully.",
+        dataset=resp_model,
+    )
 
 
 @router.post(
@@ -201,3 +236,4 @@ async def restore_dataset(
     resp = DatasetResponse.model_validate(dataset)
     resp.tags = await DatasetRepository(db).get_dataset_tags(id)
     return resp
+

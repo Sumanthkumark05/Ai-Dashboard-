@@ -25,7 +25,7 @@ const inviteSchema = z.object({
 type InviteFormData = z.infer<typeof inviteSchema>;
 
 export function InviteDialog() {
-  const { isInviteOpen, closeInviteDialog, addTeamMember } = useTeamStore();
+  const { isInviteOpen, closeInviteDialog, inviteMember } = useTeamStore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const {
@@ -50,24 +50,23 @@ export function InviteDialog() {
 
   if (!isInviteOpen) return null;
 
-  const onSubmit = (data: InviteFormData) => {
+  const onSubmit = async (data: InviteFormData) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      addTeamMember({
-        name: data.name,
-        email: data.email,
-        role: data.role as UserRole,
-        department: data.department as Department,
-      });
-
-      setIsSubmitting(false);
-      reset();
-      closeInviteDialog();
-
+    try {
+      await inviteMember(data.email, data.role as UserRole, "default");
       toast.success("Invitation sent", {
         description: `Workspace invite email delivered to ${data.email}.`,
       });
-    }, 600);
+      reset();
+      closeInviteDialog();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not deliver invite to specified email.";
+      toast.error("Failed to send invitation", {
+        description: msg,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,7 +99,7 @@ export function InviteDialog() {
                 <p className="text-xs text-muted-foreground">Grant team permissions and role access</p>
               </div>
             </div>
-            <Button variant="ghost" size="xs" onClick={closeInviteDialog} className="h-8 w-8 p-0">
+            <Button variant="ghost" size="icon-sm" onClick={closeInviteDialog} className="rounded-lg">
               <X className="h-4 w-4" />
             </Button>
           </div>

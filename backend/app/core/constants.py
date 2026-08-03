@@ -57,6 +57,7 @@ class WorkspaceVisibility(str, Enum):
     """
 
     PRIVATE = "private"
+    TEAM = "team"
     INTERNAL = "internal"
     PUBLIC = "public"
 
@@ -119,15 +120,19 @@ class DocumentProcessingStatus(str, Enum):
 
 SUPPORTED_FILE_EXTENSIONS = {
     "pdf",
+    "doc",
     "docx",
     "txt",
     "md",
     "csv",
+    "xls",
     "xlsx",
+    "ppt",
+    "pptx",
     "json",
     "html",
-    "pptx",
 }
+
 
 
 class DatasetType(str, Enum):
@@ -146,6 +151,9 @@ class DatasetType(str, Enum):
     MARKDOWN = "markdown"
     HTML = "html"
     XML = "xml"
+    ZIP = "zip"
+    PNG = "png"
+    OTHER = "other"
 
 
 class DatasetStatus(str, Enum):
@@ -182,6 +190,83 @@ class DatasetVisibility(str, Enum):
     PRIVATE = "private"
     WORKSPACE = "workspace"
     ORGANIZATION = "organization"
+
+
+class TeamRole(str, Enum):
+    """
+    Team-level RBAC Roles.
+    """
+
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    EDITOR = "EDITOR"
+    VIEWER = "VIEWER"
+
+
+class TeamMemberStatus(str, Enum):
+    """
+    Status of a user's membership in a Team.
+    """
+
+    ACTIVE = "ACTIVE"
+    INVITED = "INVITED"
+    PENDING = "PENDING"
+    REMOVED = "REMOVED"
+
+
+class TeamInvitationStatus(str, Enum):
+    """
+    Status of a Team Invitation.
+    """
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+
+
+class FileTypeCategory(str, Enum):
+    """
+    Categorization of uploaded files.
+    """
+
+    IMAGE = "IMAGE"
+    DOCUMENT = "DOCUMENT"
+    DATASET = "DATASET"
+    AUDIO = "AUDIO"
+    VIDEO = "VIDEO"
+    ARCHIVE = "ARCHIVE"
+    AI = "AI"
+    OTHER = "OTHER"
+
+
+class JobStatus(str, Enum):
+    """
+    Status of an asynchronous background job.
+    """
+
+    PENDING = "PENDING"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    RETRYING = "RETRYING"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
+
+
+class JobPriority(str, Enum):
+    """
+    Priority levels for background job routing.
+    """
+
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    NORMAL = "NORMAL"
+    LOW = "LOW"
+
+
+
 
 
 

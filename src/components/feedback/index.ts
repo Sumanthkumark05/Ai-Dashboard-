@@ -6,3 +6,4 @@ export * from "./progress";
 export * from "./loading-spinner";
 export * from "./empty-state";
 export * from "./error-state";
+export * from "./dialog";

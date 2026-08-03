@@ -1,6 +1,8 @@
+import io
 import uuid
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.dependency import get_db
@@ -17,8 +19,100 @@ from app.schemas.document import (
 from app.security.dependencies import get_current_user
 from app.security.workspace_dependency import get_current_workspace
 from app.services.document_service import DocumentService
+from app.services.storage.storage_service import StorageService
 
 router = APIRouter(prefix="/documents", tags=["Document Management"])
+
+
+@router.post(
+    "/upload",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload Document File",
+    description="Uploads a physical document file (PDF, DOC, DOCX, TXT, CSV, XLS, XLSX, PPT, PPTX, JSON, MD) to storage and registers metadata in PostgreSQL.",
+)
+async def upload_document_file(
+    file: UploadFile = File(..., description="Multipart file payload"),
+    title: Optional[str] = Form(None, description="Optional document title override"),
+    description: Optional[str] = Form(None, description="Optional document description"),
+    category: Optional[str] = Form("uncategorized", description="Document category"),
+    visibility: Optional[str] = Form("workspace", description="Visibility level"),
+    current_ws: Workspace = Depends(get_current_workspace),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DocumentResponse:
+    doc = await DocumentService.upload_document_file(
+        workspace=current_ws,
+        uploader=current_user,
+        file_obj=file,
+        title=title,
+        description=description,
+        category=category,
+        visibility=visibility,
+        db=db,
+    )
+    return DocumentResponse.model_validate(doc)
+
+
+@router.get(
+    "/{id}/download",
+    summary="Download Document File",
+    description="Streams the original document file payload.",
+)
+async def download_document(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    repo = DocumentRepository(db)
+    doc = await repo.get_by_id(id)
+    if not doc or doc.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+    storage_svc = StorageService()
+    file_bytes = await storage_svc.download_file(doc.storage_path)
+
+    return StreamingResponse(
+        io.BytesIO(file_bytes),
+        media_type=doc.mime_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{doc.original_file_name or doc.file_name}"'
+        },
+    )
+
+
+@router.get(
+    "/storage/summary",
+    summary="Get Knowledge Repository Storage Summary",
+    description="Returns exact real-time totalDocuments, totalUsedBytes, remainingBytes, capacityBytes, and usagePercentage.",
+)
+async def get_document_storage_summary(
+    current_ws: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    doc_repo = DocumentRepository(db)
+    total_docs = await doc_repo.count_workspace_documents(current_ws.id)
+    doc_bytes = await doc_repo.sum_workspace_storage(current_ws.id)
+
+    capacity_mb = current_ws.storage_limit or 10240.0
+    capacity_bytes = int(capacity_mb * 1024 * 1024)
+    remaining_bytes = max(0, capacity_bytes - doc_bytes)
+    usage_percentage = (doc_bytes / capacity_bytes * 100.0) if capacity_bytes > 0 else 0.0
+
+    from app.api.v1.routes.workspaces import format_bytes_human
+    return {
+        "workspaceId": str(current_ws.id),
+        "totalDocuments": total_docs,
+        "totalUsedBytes": doc_bytes,
+        "remainingBytes": remaining_bytes,
+        "capacityBytes": capacity_bytes,
+        "usagePercentage": usage_percentage,
+        "usedFormatted": format_bytes_human(doc_bytes),
+        "remainingFormatted": format_bytes_human(remaining_bytes),
+        "capacityFormatted": format_bytes_human(capacity_bytes),
+    }
+
 
 
 @router.post(
@@ -43,6 +137,7 @@ async def upload_document(
 @router.get(
     "",
     response_model=DocumentListResponse,
+
     summary="List Workspace Documents",
     description="Returns paginated documents in the active workspace with search and filtering.",
 )

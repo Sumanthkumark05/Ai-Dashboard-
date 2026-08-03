@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useFileStore } from "@/stores/file-store";
+import { useWorkspaceContextStore } from "@/stores/workspace-context-store";
 import { FileItem } from "@/features/file-manager/types";
 import { FileHeader } from "@/features/file-manager/components/file-header";
 import { StorageSummary } from "@/features/file-manager/components/storage-summary";
@@ -14,6 +15,7 @@ import { UploadDialog } from "@/features/file-manager/components/upload-dialog";
 import { FileSkeletonLoader } from "@/features/file-manager/components/file-skeleton-loader";
 
 export default function FileManagerPage() {
+  const { currentWorkspace } = useWorkspaceContextStore();
   const {
     files,
     viewMode,
@@ -22,23 +24,34 @@ export default function FileManagerPage() {
     sortField,
     sortOrder,
     isLoading,
+    fetchFiles,
   } = useFileStore();
+
+  React.useEffect(() => {
+    fetchFiles(currentWorkspace?.id);
+  }, [fetchFiles, currentWorkspace?.id]);
+
 
   // Client-side Filter logic
   const filteredFiles = React.useMemo(() => {
-    return files.filter((file: FileItem) => {
+    return (files || []).filter((file: FileItem) => {
+      if (!file) return false;
+      const fileName = (file.name || "").toLowerCase();
+      const fileType = (file.type || "").toLowerCase();
+      const fileExt = (file.extension || "").toLowerCase();
+      const ownerName = (file.owner?.name || "").toLowerCase();
+
       // Search Query filter (matches name, type, extension, owner)
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !query ||
-        file.name.toLowerCase().includes(query) ||
-        file.type.toLowerCase().includes(query) ||
-        file.extension.toLowerCase().includes(query) ||
-        file.owner.name.toLowerCase().includes(query);
+        fileName.includes(query) ||
+        fileType.includes(query) ||
+        fileExt.includes(query) ||
+        ownerName.includes(query);
 
       // Category filter
       let matchesCategory = true;
-      if (filterType === "folder") matchesCategory = file.type === "folder";
       if (filterType === "document") matchesCategory = file.type === "doc";
       if (filterType === "pdf") matchesCategory = file.type === "pdf";
       if (filterType === "image") matchesCategory = file.type === "image";
@@ -52,18 +65,21 @@ export default function FileManagerPage() {
   // Client-side Sort logic
   const sortedFiles = React.useMemo(() => {
     return [...filteredFiles].sort((a: FileItem, b: FileItem) => {
-      let compA: string | number = a.name.toLowerCase();
-      let compB: string | number = b.name.toLowerCase();
+      const nameA = (a.name || "").toLowerCase();
+      const nameB = (b.name || "").toLowerCase();
+
+      let compA: string | number = nameA;
+      let compB: string | number = nameB;
 
       if (sortField === "modifiedDate") {
-        compA = new Date(a.modifiedDate).getTime() || 0;
-        compB = new Date(b.modifiedDate).getTime() || 0;
+        compA = a.modifiedDate ? new Date(a.modifiedDate).getTime() || 0 : 0;
+        compB = b.modifiedDate ? new Date(b.modifiedDate).getTime() || 0 : 0;
       } else if (sortField === "size") {
-        compA = a.sizeBytes;
-        compB = b.sizeBytes;
+        compA = typeof a.sizeBytes === "number" ? a.sizeBytes : 0;
+        compB = typeof b.sizeBytes === "number" ? b.sizeBytes : 0;
       } else if (sortField === "type") {
-        compA = a.type;
-        compB = b.type;
+        compA = (a.type || "").toLowerCase();
+        compB = (b.type || "").toLowerCase();
       }
 
       if (compA < compB) return sortOrder === "asc" ? -1 : 1;

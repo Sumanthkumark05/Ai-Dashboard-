@@ -1,3 +1,4 @@
+from sqlalchemy.dialects import postgresql as pg_dialect
 """Create Workspaces Tables Migration
 
 Revision ID: 0005_create_workspaces_tables
@@ -26,8 +27,8 @@ def upgrade() -> None:
     # 1. Workspaces Table
     op.create_table(
         "workspaces",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("organization_id", sa.CHAR(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("organization_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("slug", sa.String(length=120), nullable=False),
         sa.Column("description", sa.String(length=500), nullable=True),
@@ -35,7 +36,7 @@ def upgrade() -> None:
         sa.Column("color", sa.String(length=30), nullable=True),
         sa.Column("visibility", ws_visibility_enum, server_default="internal", nullable=False),
         sa.Column("status", ws_status_enum, server_default="active", nullable=False),
-        sa.Column("created_by", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("created_by", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("storage_used", sa.Integer(), server_default="0", nullable=False),
         sa.Column("storage_limit", sa.Integer(), server_default="10240", nullable=False),
         sa.Column("dataset_count", sa.Integer(), server_default="0", nullable=False),
@@ -55,9 +56,9 @@ def upgrade() -> None:
     # 2. Workspace Members Table
     op.create_table(
         "workspace_members",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("workspace_id", sa.CHAR(36), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("workspace_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("role", ws_role_enum, server_default="contributor", nullable=False),
         sa.Column("status", member_status_enum, server_default="active", nullable=False),
         sa.Column("joined_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),

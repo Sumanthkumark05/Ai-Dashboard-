@@ -39,7 +39,8 @@ class StorageService:
 
         # 3. Save via storage provider
         storage_path = await self.provider.save(file_bytes, unique_name, subfolder=subfolder)
-        url = self.provider.generate_url(storage_path)
+        url = await self.provider.generate_url(storage_path)
+
 
         file_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
@@ -65,7 +66,11 @@ class StorageService:
         """
         Retrieves file metadata from storage provider.
         """
-        return await self.provider.metadata(storage_path)
+        meta = await self.provider.metadata(storage_path)
+        if "size" in meta and isinstance(meta["size"], str):
+            meta["size"] = int(meta["size"])
+        return meta
+
 
     async def download_file(self, storage_path: str) -> bytes:
         """

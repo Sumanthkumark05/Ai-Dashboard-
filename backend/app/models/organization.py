@@ -30,7 +30,7 @@ class Organization(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     storage_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # Storage used in MB
     storage_limit: Mapped[int] = mapped_column(Integer, default=1024, nullable=False)  # Storage limit in MB
     member_limit: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
-    workspace_limit: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    workspace_limit: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

@@ -18,8 +18,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Initial empty baseline migration for Module 3 database infrastructure."""
-    pass
+    """
+    Initial empty baseline migration.
+    Also widens alembic_version.version_num to 64 chars so long revision IDs work.
+    """
+    op.execute(
+        "ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64)"
+    )
 
 
 def downgrade() -> None:

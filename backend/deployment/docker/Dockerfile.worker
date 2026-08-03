@@ -1,0 +1,19 @@
+# Production Dockerfile for Celery Worker Process
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app
+
+RUN useradd -m -u 1000 celeryuser && chown -R celeryuser:celeryuser /app
+USER celeryuser
+
+CMD ["celery", "-A", "app.jobs.celery_app.celery_app", "worker", "--loglevel=info", "--concurrency=4", "-Q", "critical,high,normal,low"]

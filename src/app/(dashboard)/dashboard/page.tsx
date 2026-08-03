@@ -7,8 +7,10 @@ import { QuickActions } from "@/features/dashboard/components/quick-actions";
 import { AIInsightsCard } from "@/features/dashboard/components/ai-insights-card";
 import { AnalyticsCharts } from "@/features/dashboard/components/analytics-charts";
 import { RecentActivity } from "@/features/dashboard/components/recent-activity";
-import { RecentFiles } from "@/features/dashboard/components/recent-files";
 import { WorkspaceOverview } from "@/features/dashboard/components/workspace-overview";
+import { CalendarWidget } from "@/features/dashboard/components/calendar-widget";
+import { MailWidget } from "@/features/dashboard/components/mail-widget";
+import { RecentFiles } from "@/features/dashboard/components/recent-files";
 import { StorageUsageCard } from "@/features/dashboard/components/storage-usage-card";
 import { TeamSnapshot } from "@/features/dashboard/components/team-snapshot";
 import { AnnouncementsCard } from "@/features/dashboard/components/announcements-card";
@@ -34,16 +36,26 @@ export default function DashboardHomePage() {
 
       <AnalyticsCharts />
 
-      {/* SECTION 6 & 8: Activity & Workspace Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentActivity />
-        <WorkspaceOverview />
+      {/* SECTION 6, 7 & 8: Activity, Calendar & Mail Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <CalendarWidget />
+        </div>
+        <div className="lg:col-span-1">
+          <MailWidget />
+        </div>
+        <div className="lg:col-span-1">
+          <RecentActivity />
+        </div>
       </div>
 
-      {/* SECTION 7: Recent Files */}
-      <RecentFiles />
+      {/* SECTION 9: Workspace Overview & Recent Files */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WorkspaceOverview />
+        <RecentFiles />
+      </div>
 
-      {/* SECTION 9, 10 & 11: Storage, Team Snapshot & Announcements */}
+      {/* SECTION 10, 11 & 12: Storage, Team Snapshot & Announcements */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StorageUsageCard />
         <TeamSnapshot />

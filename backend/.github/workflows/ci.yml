@@ -1,0 +1,65 @@
+name: Continuous Integration (CI)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Linting & Pytest Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: neurodesk
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: neurodesk_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run Pytest Test Suite
+        env:
+          DATABASE_URL: postgresql+asyncpg://neurodesk:password@localhost:5432/neurodesk_db
+          REDIS_URL: redis://localhost:6379/0
+          ENVIRONMENT: testing
+          SECRET_KEY: test_secret_key_for_ci_cd_pipeline_validation
+        run: |
+          pytest --cov=app --cov-report=xml
+
+      - name: Validate Docker Image Build
+        run: |
+          docker build -t neurodesk-api:ci -f deployment/docker/Dockerfile .

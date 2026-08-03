@@ -2,44 +2,49 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, CheckCircle2, FileUp } from "lucide-react";
+import { Upload, X, CheckCircle2, FileUp, Loader2 } from "lucide-react";
 import { useFileStore } from "@/stores/file-store";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/feedback/progress";
 import { Alert, AlertDescription } from "@/components/feedback/alert";
 import { toast } from "@/components/feedback/toast";
 
+import { useWorkspaceContextStore } from "@/stores/workspace-context-store";
+import { useQueryClient } from "@tanstack/react-query";
+
 export function UploadDialog() {
-  const { isUploadOpen, closeUploadDialog, addMockUploadedFile } = useFileStore();
+  const queryClient = useQueryClient();
+  const { currentWorkspace } = useWorkspaceContextStore();
+  const { isUploadOpen, closeUploadDialog, uploadFile } = useFileStore();
   const [dragActive, setDragActive] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
-  const [progress, setProgress] = React.useState(0);
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
-  const [fileName, setFileName] = React.useState("ai_vector_dataset.json");
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!isUploadOpen) return null;
 
-  const startSimulatedUpload = (name: string, sizeBytes: number = 2450000) => {
-    setFileName(name);
+  const handleUploadFile = async (file: File) => {
+    setFileName(file.name);
     setUploading(true);
-    setProgress(0);
+    setErrorMsg(null);
     setUploadSuccess(false);
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          setUploadSuccess(true);
-          addMockUploadedFile(name, sizeBytes);
-          toast.success("Upload complete", { description: `${name} has been indexed.` });
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 250);
+    try {
+      await uploadFile(file, currentWorkspace?.id);
+      await queryClient.invalidateQueries({ queryKey: ["workspace-storage"] });
+      await queryClient.invalidateQueries({ queryKey: ["files"] });
+      await queryClient.invalidateQueries({ queryKey: ["workspace-files"] });
+      setUploading(false);
+      setUploadSuccess(true);
+      toast.success("Upload complete", { description: `${file.name} has been uploaded to database.` });
+    } catch (err: unknown) {
+      setUploading(false);
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setErrorMsg(msg);
+      toast.error("Upload error", { description: msg });
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -58,14 +63,14 @@ export function UploadDialog() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      startSimulatedUpload(file.name, file.size);
+      handleUploadFile(file);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      startSimulatedUpload(file.name, file.size);
+      handleUploadFile(file);
     }
   };
 
@@ -96,14 +101,14 @@ export function UploadDialog() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">Upload Workspace File</h3>
-                <p className="text-xs text-muted-foreground">Import documents, code datasets, or AI weights</p>
+                <p className="text-xs text-muted-foreground">Import real files into your PostgreSQL workspace storage</p>
               </div>
             </div>
             <Button
               variant="ghost"
-              size="xs"
+              size="icon-sm"
               onClick={closeUploadDialog}
-              className="h-8 w-8 p-0"
+              className="rounded-lg"
               aria-label="Close dialog"
             >
               <X className="h-4 w-4" />
@@ -124,7 +129,7 @@ export function UploadDialog() {
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !uploading && fileInputRef.current?.click()}
             className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
               dragActive
                 ? "border-primary bg-primary/10"
@@ -135,23 +140,31 @@ export function UploadDialog() {
               <FileUp className="h-6 w-6" />
             </div>
             <p className="text-sm font-semibold text-foreground mb-1">
-              Drag & drop your files here, or <span className="text-primary underline">browse</span>
+              Drag & drop your file here, or <span className="text-primary underline">browse</span>
             </p>
             <p className="text-xs text-muted-foreground">
-              Supports PDF, DOCX, CSV, TS, PY, JSON, PNG, MP4 (Max 500MB)
+              Supports any file format (PDF, DOCX, CSV, TS, PY, JSON, PNG, MP4, ZIP)
             </p>
           </div>
 
-          {/* Progress Bar & Status */}
+          {/* Progress Indicator */}
           {uploading && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-foreground truncate max-w-[240px]">
-                  Uploading {fileName}...
-                </span>
-                <span className="text-muted-foreground">{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
+            <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
+              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+              <span className="text-xs font-medium text-foreground truncate">
+                Uploading {fileName}...
+              </span>
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {errorMsg && (
+            <div className="mt-4">
+              <Alert variant="destructive">
+                <AlertDescription className="text-xs font-semibold">
+                  {errorMsg}
+                </AlertDescription>
+              </Alert>
             </div>
           )}
 
@@ -161,24 +174,16 @@ export function UploadDialog() {
               <Alert variant="success">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription className="text-xs font-semibold">
-                  File uploaded and indexed into knowledge base successfully!
+                  File uploaded and saved to workspace successfully!
                 </AlertDescription>
               </Alert>
             </div>
           )}
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between pt-6 mt-4 border-t border-border">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => startSimulatedUpload("sample_dataset_model.json", 1850000)}
-              disabled={uploading}
-            >
-              Simulate Sample Upload
-            </Button>
+          <div className="flex items-center justify-end gap-2 pt-6 mt-4 border-t border-border">
             <Button variant="secondary" size="sm" onClick={closeUploadDialog}>
-              Done
+              {uploadSuccess ? "Close" : "Cancel"}
             </Button>
           </div>
         </motion.div>

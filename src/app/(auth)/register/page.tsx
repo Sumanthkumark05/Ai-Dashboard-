@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail, User } from "lucide-react";
 
@@ -40,6 +40,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    control,
     watch,
     formState: { errors },
   } = useForm<RegisterSchemaType>({
@@ -150,14 +151,21 @@ export default function RegisterPage() {
           {/* Terms & Conditions Checkbox */}
           <div className="space-y-1 pt-1">
             <div className="flex items-start space-x-2">
-              <Checkbox
-                id="termsAccepted"
-                disabled={isLoading}
-                {...register("termsAccepted")}
+              <Controller
+                name="termsAccepted"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="termsAccepted"
+                    disabled={isLoading}
+                    checked={Boolean(field.value)}
+                    onCheckedChange={(checked) => field.onChange(Boolean(checked))}
+                  />
+                )}
               />
               <Label
                 htmlFor="termsAccepted"
-                className="text-xs font-normal text-muted-foreground leading-snug cursor-pointer"
+                className="text-xs font-normal text-muted-foreground leading-snug cursor-pointer select-none"
               >
                 I agree to the{" "}
                 <Link href="#" className="text-primary hover:underline">

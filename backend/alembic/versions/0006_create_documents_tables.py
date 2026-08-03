@@ -1,3 +1,4 @@
+from sqlalchemy.dialects import postgresql as pg_dialect
 """Create Documents Tables Migration
 
 Revision ID: 0006_create_documents_tables
@@ -25,10 +26,10 @@ def upgrade() -> None:
     # 1. Documents Table
     op.create_table(
         "documents",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("workspace_id", sa.CHAR(36), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("organization_id", sa.CHAR(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("uploaded_by", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("workspace_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("organization_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("uploaded_by", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("description", sa.String(length=1000), nullable=True),
         sa.Column("file_name", sa.String(length=255), nullable=False),
@@ -59,14 +60,14 @@ def upgrade() -> None:
     # 2. Document Versions Table
     op.create_table(
         "document_versions",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("document_id", sa.CHAR(36), sa.ForeignKey("documents.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("document_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("documents.id", ondelete="CASCADE"), nullable=False),
         sa.Column("version_number", sa.Integer(), nullable=False),
         sa.Column("file_name", sa.String(length=255), nullable=False),
         sa.Column("storage_path", sa.String(length=500), nullable=False),
         sa.Column("checksum", sa.String(length=128), nullable=False),
         sa.Column("file_size", sa.Integer(), nullable=False),
-        sa.Column("created_by", sa.CHAR(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("created_by", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )
@@ -76,8 +77,8 @@ def upgrade() -> None:
     # 3. Document Tags Table
     op.create_table(
         "document_tags",
-        sa.Column("id", sa.CHAR(36), primary_key=True, nullable=False),
-        sa.Column("document_id", sa.CHAR(36), sa.ForeignKey("documents.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=False), primary_key=True, nullable=False),
+        sa.Column("document_id", sa.dialects.postgresql.UUID(as_uuid=False), sa.ForeignKey("documents.id", ondelete="CASCADE"), nullable=False),
         sa.Column("tag", sa.String(length=50), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),

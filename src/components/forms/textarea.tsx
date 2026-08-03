@@ -38,9 +38,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           id={textareaId}
           className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-            hasError && "border-destructive focus-visible:ring-destructive",
-            hasSuccess && "border-success focus-visible:ring-success",
+            "flex min-h-[80px] w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground shadow-xs transition-all duration-150 placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/40 resize-none",
+            hasError && "border-destructive focus-visible:ring-destructive/30 focus-visible:border-destructive",
+            hasSuccess && "border-success focus-visible:ring-success/30 focus-visible:border-success",
             className
           )}
           ref={ref}

@@ -143,3 +143,50 @@ async def test_dataset_statistics_and_versions(ds_client: AsyncClient) -> None:
     versions = vers_resp.json()
     assert len(versions) == 1
     assert versions[0]["version_number"] == 1
+
+
+@pytest.mark.asyncio
+async def test_upload_dataset_file_flow(ds_client: AsyncClient) -> None:
+    """
+    Test uploading a physical file payload to /api/v1/datasets/upload endpoint.
+    """
+    reg_resp = await ds_client.post(
+        "/api/v1/auth/register",
+        json={"email": "uploaduser@neurodesk.ai", "username": "uploaduser", "password": "Password123!"},
+    )
+    token = reg_resp.json()["data"]["tokens"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    org_resp = await ds_client.post(
+        "/api/v1/organizations", json={"name": "Upload Org"}, headers=headers
+    )
+    headers["X-Organization-ID"] = org_resp.json()["id"]
+
+    ws_resp = await ds_client.post(
+        "/api/v1/workspaces", json={"name": "Upload WS"}, headers=headers
+    )
+    headers["X-Workspace-ID"] = ws_resp.json()["id"]
+
+    # Upload CSV dataset
+    file_payload = ("users.csv", b"id,name,email\n1,Alice,alice@example.com\n2,Bob,bob@example.com\n", "text/csv")
+    upload_resp = await ds_client.post(
+        "/api/v1/datasets/upload",
+        files={"file": file_payload},
+        data={"description": "Test user records", "tags": "test,users"},
+        headers=headers,
+    )
+    assert upload_resp.status_code == 201
+    data = upload_resp.json()
+    assert data["success"] is True
+    assert "dataset" in data
+    assert data["dataset"]["file_name"] == "users.csv"
+    assert data["dataset"]["dataset_type"] == "csv"
+    assert data["dataset"]["record_count"] == 2
+    assert data["dataset"]["column_count"] == 3
+
+    # List datasets to verify it's persisted in DB
+    list_resp = await ds_client.get("/api/v1/datasets", headers=headers)
+    assert list_resp.status_code == 200
+    res = list_resp.json()
+    assert res["total_items"] == 1
+    assert res["items"][0]["file_name"] == "users.csv"

@@ -43,7 +43,7 @@ export function ResetDialog() {
               <AlertTriangle className="h-5 w-5" />
               <h3 className="text-base font-bold text-foreground">Reset All Preferences?</h3>
             </div>
-            <Button variant="ghost" size="xs" onClick={closeResetModal} className="h-8 w-8 p-0">
+            <Button variant="ghost" size="icon-sm" onClick={closeResetModal} className="rounded-lg">
               <X className="h-4 w-4" />
             </Button>
           </div>

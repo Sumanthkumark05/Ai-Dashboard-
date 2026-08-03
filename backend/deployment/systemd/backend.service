@@ -1,0 +1,15 @@
+[Unit]
+Description=NeuroDesk AI FastAPI Backend Service
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/neurodesk/backend
+ExecStart=/var/www/neurodesk/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+Restart=always
+RestartSec=5
+Environment=ENVIRONMENT=production
+
+[Install]
+WantedBy=multi-user.target

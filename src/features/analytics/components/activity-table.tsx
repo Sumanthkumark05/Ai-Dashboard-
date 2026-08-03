@@ -1,28 +1,46 @@
 "use client";
 
 import * as React from "react";
-import { analyticsActivitiesData } from "../mock/analytics-mock-data";
-import { AnalyticsActivity } from "../types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/display/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/display/avatar";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
-import { getInitials } from "@/constants";
+import { dashboardApi, ActivityItem } from "@/services/dashboard-api";
 
 export function ActivityTable() {
   const [query, setQuery] = React.useState("");
+  const [activities, setActivities] = React.useState<ActivityItem[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 5;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    dashboardApi.getActivity(50, 0)
+      .then((res) => {
+        if (!cancelled) setActivities(res.items || []);
+      })
+      .catch(() => {
+        if (!cancelled) setActivities([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = React.useMemo(() => {
-    return analyticsActivitiesData.filter(
+    if (!query) return activities;
+    const q = query.toLowerCase();
+    return activities.filter(
       (a) =>
-        a.user.toLowerCase().includes(query.toLowerCase()) ||
-        a.action.toLowerCase().includes(query.toLowerCase()) ||
-        a.module.toLowerCase().includes(query.toLowerCase())
+        (a.description && a.description.toLowerCase().includes(q)) ||
+        (a.action && a.action.toLowerCase().includes(q)) ||
+        (a.entity_type && a.entity_type.toLowerCase().includes(q))
     );
-  }, [query]);
+  }, [activities, query]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -44,47 +62,48 @@ export function ActivityTable() {
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Time</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Module</TableHead>
-            <TableHead className="text-right">Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginated.map((act: AnalyticsActivity) => {
-            const initials = getInitials(act.user);
-
-            return (
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-10 bg-muted/20 animate-pulse rounded" />
+          ))}
+        </div>
+      ) : paginated.length === 0 ? (
+        <div className="text-center py-8 text-xs text-muted-foreground">
+          No telemetry events recorded yet.
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Entity Type</TableHead>
+              <TableHead className="text-right">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginated.map((act) => (
               <TableRow key={act.id}>
-                <TableCell className="text-xs text-muted-foreground font-mono">{act.timestamp}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar size="xs">
-                      <AvatarImage src={act.avatarUrl} alt={act.user} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium text-foreground">{act.user}</span>
-                  </div>
+                <TableCell className="text-xs text-muted-foreground font-mono">
+                  {new Date(act.created_at).toLocaleString()}
                 </TableCell>
-                <TableCell className="text-xs font-semibold text-foreground">{act.action}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{act.module}</TableCell>
+                <TableCell className="text-xs font-semibold text-foreground">
+                  {act.action}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground uppercase">
+                  {act.entity_type || "SYSTEM"}
+                </TableCell>
                 <TableCell className="text-right">
-                  <Badge
-                    variant={act.status === "Success" ? "success" : act.status === "Pending" ? "warning" : "destructive"}
-                    size="sm"
-                  >
-                    {act.status}
+                  <Badge variant="success" size="sm">
+                    Logged
                   </Badge>
                 </TableCell>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">

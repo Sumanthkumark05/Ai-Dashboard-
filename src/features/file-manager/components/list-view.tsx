@@ -49,7 +49,20 @@ export interface ListViewProps {
 }
 
 export function ListView({ files }: ListViewProps) {
-  const { openPreviewDrawer, toggleFavoriteFile, deleteFile, duplicateFile } = useFileStore();
+  const { openPreviewDrawer, toggleFavoriteFile, deleteFile, duplicateFile, downloadFile } = useFileStore();
+
+  const handleDownloadFile = async (e: React.MouseEvent, fileId: string, fileName: string) => {
+    e.stopPropagation();
+    try {
+      toast.info("Preparing download...", { description: `Downloading ${fileName}` });
+      await downloadFile(fileId, fileName);
+      toast.success("Download completed", { description: `${fileName} saved successfully.` });
+    } catch (err: unknown) {
+      toast.error("Download failed", {
+        description: err instanceof Error ? err.message : "Could not download file payload.",
+      });
+    }
+  };
 
   return (
     <Table>
@@ -157,9 +170,7 @@ export function ListView({ files }: ListViewProps) {
                       <span>Duplicate</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() =>
-                        toast.success("Download started", { description: `Downloading ${file.name}` })
-                      }
+                      onClick={(e) => handleDownloadFile(e, file.id, file.name)}
                       className="cursor-pointer text-xs"
                     >
                       <Download className="mr-2 h-3.5 w-3.5" />

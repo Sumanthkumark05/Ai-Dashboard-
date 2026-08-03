@@ -1,10 +1,16 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import (
+    DatasetProcessingStatus,
+    DatasetStatus,
+    DatasetType,
+    DatasetVisibility,
+)
 from app.models.dataset import Dataset
 from app.models.dataset_tag import DatasetTag
 from app.models.dataset_version import DatasetVersion
@@ -14,14 +20,176 @@ from app.repositories.dataset_repository import DatasetRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.dataset import CreateDatasetRequest, UpdateDatasetRequest
 from app.services.dataset_validation_service import DatasetValidationService
-
-
 from app.services.storage.storage_service import StorageService
+
 
 class DatasetService:
     """
     Business Logic Service managing dataset metadata, versioning, tags, and workspace stats.
     """
+
+    @staticmethod
+    async def upload_dataset_file(
+        workspace: Workspace,
+        file: UploadFile,
+        uploader: User,
+        db: AsyncSession,
+        description: Optional[str] = None,
+        tags_str: Optional[str] = None,
+    ) -> Dataset:
+        """
+        Uploads a physical dataset file to storage and saves a new dataset record in PostgreSQL atomically.
+        """
+        import hashlib
+        import os
+        from app.core.config import settings
+        from app.utils.mime import get_mime_type
+
+        file_bytes = await file.read()
+        if len(file_bytes) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Empty file uploaded. Please select a valid dataset file.",
+            )
+
+        max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+        if len(file_bytes) > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File size exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB.",
+            )
+
+        # Compute SHA-256 checksum
+        checksum = hashlib.sha256(file_bytes).hexdigest()
+        filename = file.filename or "uploaded_dataset.bin"
+        base_name, file_ext_raw = os.path.splitext(filename)
+        file_ext = file_ext_raw.lstrip(".").lower() or "bin"
+        mime_type = file.content_type or get_mime_type(filename)
+
+        ext_type_map = {
+            "csv": DatasetType.CSV,
+            "xlsx": DatasetType.XLSX,
+            "xls": DatasetType.XLSX,
+            "json": DatasetType.JSON,
+            "parquet": DatasetType.PARQUET,
+            "sql": DatasetType.SQL,
+            "txt": DatasetType.TXT,
+            "pdf": DatasetType.PDF,
+            "docx": DatasetType.DOCX,
+            "doc": DatasetType.DOCX,
+            "md": DatasetType.MARKDOWN,
+            "markdown": DatasetType.MARKDOWN,
+            "html": DatasetType.HTML,
+            "xml": DatasetType.XML,
+            "zip": DatasetType.ZIP,
+            "png": DatasetType.PNG,
+        }
+        ds_type = ext_type_map.get(file_ext, DatasetType.OTHER)
+
+        record_count = 0
+        column_count = 0
+        if file_ext == "csv":
+            try:
+                lines = file_bytes.decode("utf-8", errors="ignore").splitlines()
+                if lines:
+                    record_count = max(0, len(lines) - 1)
+                    first_line = lines[0]
+                    column_count = len(first_line.split(","))
+            except Exception:
+                pass
+        elif file_ext == "json":
+            try:
+                import json
+                parsed = json.loads(file_bytes.decode("utf-8", errors="ignore"))
+                if isinstance(parsed, list):
+                    record_count = len(parsed)
+                    if record_count > 0 and isinstance(parsed[0], dict):
+                        column_count = len(parsed[0].keys())
+                elif isinstance(parsed, dict):
+                    record_count = len(parsed.keys())
+            except Exception:
+                pass
+
+        storage_svc = StorageService()
+        storage_result = await storage_svc.upload_file(
+            file_bytes=file_bytes,
+            original_filename=filename,
+            subfolder="datasets",
+        )
+
+        canonical_path = getattr(storage_result, "storage_path", None) or f"datasets/{filename}"
+
+        ds_repo = DatasetRepository(db)
+        ws_repo = WorkspaceRepository(db)
+
+        clean_name = base_name.replace("_", " ").replace("-", " ").strip().title() or filename
+
+        try:
+            dataset = await ds_repo.create(
+                organization_id=workspace.organization_id,
+                workspace_id=workspace.id,
+                uploaded_by=uploader.id,
+                name=clean_name,
+                description=description,
+                dataset_type=ds_type,
+                source="upload",
+                file_name=filename,
+                original_file_name=filename,
+                storage_path=canonical_path,
+                mime_type=mime_type,
+                extension=file_ext,
+                checksum=checksum,
+                language="en",
+                encoding="utf-8",
+                file_size=len(file_bytes),
+                record_count=record_count,
+                column_count=column_count,
+                visibility=DatasetVisibility.WORKSPACE,
+                status=DatasetStatus.READY,
+                processing_status=DatasetProcessingStatus.COMPLETED,
+                version=1,
+            )
+
+            version_item = DatasetVersion(
+                dataset_id=dataset.id,
+                version_number=1,
+                file_name=filename,
+                storage_path=canonical_path,
+                checksum=checksum,
+                file_size=len(file_bytes),
+                record_count=record_count,
+                column_count=column_count,
+                created_by=uploader.id,
+            )
+            db.add(version_item)
+
+            if tags_str:
+                tag_list = [t.strip().lower() for t in tags_str.split(",") if t.strip()]
+                for t in tag_list:
+                    db.add(DatasetTag(dataset_id=dataset.id, tag=t))
+
+            dataset_count = await ds_repo.count_workspace_datasets(workspace.id)
+            storage_bytes = await ds_repo.sum_workspace_dataset_storage(workspace.id)
+            storage_mb = int(storage_bytes / (1024 * 1024))
+
+            await ws_repo.update(
+                workspace.id,
+                dataset_count=dataset_count,
+                storage_used=storage_mb,
+                last_activity=datetime.now(timezone.utc),
+            )
+
+            await db.commit()
+            await db.refresh(dataset)
+            logger.info(f"Dataset '{dataset.name}' ({dataset.id}) uploaded & registered to workspace {workspace.id}")
+            return dataset
+        except Exception as exc:
+            await db.rollback()
+            logger.exception(f"Failed to record dataset in PostgreSQL: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to record dataset in database: {str(exc)}",
+            )
 
     @staticmethod
     async def create_dataset(
