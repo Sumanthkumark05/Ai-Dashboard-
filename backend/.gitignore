@@ -38,6 +38,11 @@ env/
 logs/
 *.log
 
+# SQLite Local Database
+*.db
+*.sqlite*
+*.sqlite3
+
 # Pytest / Coverage
 .pytest_cache/
 .coverage

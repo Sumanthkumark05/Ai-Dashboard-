@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession

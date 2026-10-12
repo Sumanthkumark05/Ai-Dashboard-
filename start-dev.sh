@@ -14,6 +14,8 @@ echo " NeuroDesk AI – Development Server Startup"
 echo "======================================================"
 echo ""
 
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+
 # ── 1. Kill any existing processes on ports 3000, 3001, 8000 ──────────────
 echo "▶ Cleaning up any stale processes on ports 3000, 3001, 8000..."
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true
@@ -35,36 +37,18 @@ python - << 'PYEOF'
 import asyncio, os, sys
 sys.path.insert(0, '.')
 from dotenv import load_dotenv
-load_dotenv()
-
-MIGRATION_SQL = """
-ALTER TABLE workspaces
-  ADD COLUMN IF NOT EXISTS client_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS project_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS project_type VARCHAR(20) DEFAULT 'internal',
-  ADD COLUMN IF NOT EXISTS start_date VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS end_date VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS client_demo_date VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS internal_review_date VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS final_delivery_date VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS reminder_before_demo VARCHAR(50) DEFAULT '1 day before',
-  ADD COLUMN IF NOT EXISTS reminder_before_deadline VARCHAR(50) DEFAULT '3 days before',
-  ADD COLUMN IF NOT EXISTS meeting_duration INTEGER DEFAULT 60,
-  ADD COLUMN IF NOT EXISTS priority VARCHAR(50) DEFAULT 'medium';
-"""
+load_dotenv('.env')
 
 async def migrate():
-    import asyncpg
-    conn = await asyncpg.connect(
-        host=os.getenv('DB_HOST','localhost'),
-        port=int(os.getenv('DB_PORT','5432')),
-        database=os.getenv('DB_NAME','neurodesk_db'),
-        user=os.getenv('DB_USER','postgres'),
-        password=os.getenv('DB_PASSWORD','postgres')
-    )
-    await conn.execute(MIGRATION_SQL)
-    await conn.close()
-    print("  Schema sync complete.")
+    try:
+        from app.database.engine import engine
+        from app.database.base import Base
+        import app.models
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("  Schema sync complete.")
+    except Exception as exc:
+        print(f"  Schema sync note: {exc}")
 
 asyncio.run(migrate())
 PYEOF

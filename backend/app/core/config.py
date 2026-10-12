@@ -158,12 +158,21 @@ class Settings(BaseSettings):
         Compute dependent URLs and perform production security assertions.
         """
         # 1. Compute Database URLs if not explicitly passed
-        if not self.DATABASE_URL:
+        if self.DATABASE_URL and not self.ASYNC_DATABASE_URL:
+            url = self.DATABASE_URL
+            if url.startswith("postgres://"):
+                self.ASYNC_DATABASE_URL = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgresql://"):
+                self.ASYNC_DATABASE_URL = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif url.startswith("sqlite:///"):
+                self.ASYNC_DATABASE_URL = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+            else:
+                self.ASYNC_DATABASE_URL = url
+        elif not self.DATABASE_URL and not self.ASYNC_DATABASE_URL:
             self.DATABASE_URL = (
                 f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@"
                 f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
             )
-        if not self.ASYNC_DATABASE_URL:
             self.ASYNC_DATABASE_URL = (
                 f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@"
                 f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

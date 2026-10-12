@@ -1,0 +1,36 @@
+services:
+  # NeuroDesk AI FastAPI Backend Web Service
+  - type: web
+    name: neurodesk-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: APP_NAME
+        value: "NeuroDesk AI"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neurodesk-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://neurodesk-ai.vercel.app
+
+databases:
+  # Managed PostgreSQL Database
+  - name: neurodesk-db
+    plan: free
+    region: oregon
+    databaseName: neurodesk
+    user: neurodesk_user
